@@ -297,7 +297,7 @@ print(md[1])        # 'one'
 print(md[(2, 3)])   # 'tuple_key'
 print(md.mget(1))   # 'one'
 
-# print(md.1)  # SyntaxError
+print(md.1)  # SyntaxError
 ```
 
 ### 4. Protected Empty MagicDicts
