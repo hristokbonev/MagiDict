@@ -135,47 +135,6 @@ standard_dict = md.disenchant()
 print(type(standard_dict))  # <class 'dict'>
 ```
 
-## Quick Start
-
-```python
-from magic_dict import MagicDict
-
-# Create from a regular dict
-data = {
-    'user': {
-        'name': 'Alice',
-        'contacts': {
-            'email': 'alice@example.com',
-            'phone': None
-        }
-    },
-    'posts': [
-        {'id': 1, 'title': 'First Post'},
-        {'id': 2, 'title': 'Second Post'}
-    ]
-}
-
-md = MagicDict(data)
-
-# Access with dot notation
-print(md.user.name)  # 'Alice'
-
-# Safe chaining with missing keys
-print(md.user.address.city)  # MagicDict({}) - no error!
-
-# Safe chaining with None values
-print(md.user.contacts.phone.number)  # MagicDict({}) - no error!
-
-# Access list items
-print(md.posts[0].title)  # 'First Post'
-print(md['posts.1.title'])  # 'Second Post'
-
-# Use standard dict methods
-md['user']['age'] = 30
-if 'user' in md:
-    print(md.user.age)  # 30
-```
-
 ## API Reference
 
 ### Constructor
