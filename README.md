@@ -390,16 +390,7 @@ regular = md.disenchant()
 
 ### Auto-completion Support
 
-`MagicDict` provides intelligent auto-completion in IPython and Jupyter notebooks:
-
-```python
-md = MagicDict({'user_name': 'Alice', 'user_age': 30})
-
-# In IPython/Jupyter, typing `md.` and pressing TAB will show:
-# - user_name
-# - user_age
-# - plus all standard dict methods
-```
+`MagicDict` provides intelligent auto-completion in IPython, Jupyter notebooks and IDE's:
 
 ## Performance Considerations
 
