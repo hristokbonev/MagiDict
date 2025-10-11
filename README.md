@@ -266,7 +266,7 @@ print(md.user.name)  # 'Alice'
 
 ### 1. Key Conflicts with Dict Methods
 
-Keys that conflict with standard `dict` methods must be accessed using brackets:
+Keys that conflict with standard `dict` methods must be accessed using brackets, `mget` or `get`:
 
 ```python
 md = MagicDict({'keys': 'my_value', 'items': 'another_value'})
