@@ -208,26 +208,7 @@ All standard dictionary methods are supported:
 - `items()` - Return dict items
 - `get()` - Get value with optional default
 - `__contains__()` - Check if key exists (via `in`)
-
-**Examples:**
-
-```python
-md = MagicDict({'a': 1, 'b': 2})
-
-# Update
-md.update({'c': 3})
-md |= {'d': 4}  # In-place update operator
-
-# Copy
-md2 = md.copy()
-
-# Pop
-value = md.pop('a', 'default')
-
-# Keys, values, items
-for key in md.keys():
-    print(key)
-```
+- and more
 
 ## Utility Functions
 
