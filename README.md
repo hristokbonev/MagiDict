@@ -2,11 +2,7 @@
 # MagicDict Documentation
 
 A powerful Python dictionary subclass that provides safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling.
-
 Designed to simplify working with complex, deeply nested dictionaries, it reduces errors and improves code readability.
-
-The class handles challenging edge cases such as recursive structures, circular and self references, deep copying, and pickling. In addition to standard functionality testing, it has been validated against exotic data structures and bizarre use cases.
-
 Optimized and memoized for better performance.
 
 ## Table of Contents
