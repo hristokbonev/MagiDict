@@ -178,11 +178,6 @@ Safe get method that mimics attribute-style access.
 
 Shorthand alias for `mget()`.
 
-```python
-md = MagicDict({'key': 'value'})
-print(md.mg('key'))  # 'value'
-```
-
 #### `disenchant()`
 
 Converts the `MagicDict` and all nested `MagicDict` instances back to standard Python dictionaries. Handles circular references gracefully.
