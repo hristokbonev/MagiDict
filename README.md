@@ -148,9 +148,13 @@ Creates a new `MagicDict` instance. Accepts the same arguments as the built-in `
 **Examples:**
 
 ```python
-md1 = MagicDict({'key': 'value'})
-md2 = MagicDict(key='value')
-md3 = MagicDict([('key', 'value')])
+MagicDict(*args, **kwargs)
+```
+or
+```python
+d = {"key": "value"}
+
+md = MagicDict(d)
 ```
 
 ### Methods
