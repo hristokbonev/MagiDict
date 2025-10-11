@@ -321,8 +321,8 @@ Setting or updating keys using dot notation is not supported. Use bracket notati
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
 
-md.user.name = 'Bob'  # Raises AttributeError
-md.user.age = 30      # Raises AttributeError
+md.user.name = 'Bob'  # AttributeError
+md.user.age = 30      # AttributeError
 # Use bracket notation instead
 md['user']['name'] = 'Bob'
 md['user']['age'] = 30
