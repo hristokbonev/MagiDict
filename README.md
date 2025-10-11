@@ -392,33 +392,6 @@ regular = md.disenchant()
 
 ## Performance Considerations
 
-### Initialization Overhead
-
-Converting nested structures has a one-time cost proportional to the depth and size of the structure:
-
-```python
-import time
-
-large_dict = {'level1': {f'key{i}': {'nested': 'value'} for i in range(1000)}}
-
-start = time.time()
-md = MagicDict(large_dict)
-print(f"Conversion took: {time.time() - start:.4f}s")
-```
-
-### Memory Usage
-
-`MagicDict` uses slightly more memory than standard dicts due to:
-
-- Additional object instances for nested dicts
-- Small overhead for the class itself
-
-### Access Speed
-
-- Attribute access: Marginally slower than bracket notation (negligible for most use cases)
-- Bracket notation: Comparable to standard dict
-- Dot notation in brackets: Additional parsing overhead
-
 ### Best Practices
 
 **Good use cases:**
