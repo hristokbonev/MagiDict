@@ -334,102 +334,13 @@ md['user']['age'] = 30
 
 ### Working with JSON APIs
 
-```python
-import requests
-from magic_dict import MagicDict
-
-response = requests.get('https://api.example.com/user')
-user = MagicDict(response.json())
-
-# Safe access even if fields are missing
-avatar_url = user.profile.avatar.url or 'default.jpg'
-email_notifications = user.settings.notifications.email or False
-theme = user.preferences.theme.mode or 'light'
-
-print(f"Avatar: {avatar_url}")
-print(f"Email notifications: {email_notifications}")
-```
-
 ### Configuration Files
-
-```python
-from magic_dict import magic_loads
-
-with open('config.json') as f:
-    config = magic_loads(f.read())
-
-# Safe nested access with defaults
-database_url = config.database.url or 'localhost'
-max_connections = config.database.pool.max or 10
-debug_mode = config.app.debug or False
-
-# Use in application
-if config.features.new_ui:
-    enable_new_ui()
-```
 
 ### Nested Data Structures
 
-```python
-data = MagicDict({
-    'company': {
-        'departments': [
-            {
-                'name': 'Engineering',
-                'teams': [
-                    {'name': 'Backend', 'size': 10},
-                    {'name': 'Frontend', 'size': 8}
-                ]
-            },
-            {
-                'name': 'Sales',
-                'teams': [
-                    {'name': 'Enterprise', 'size': 5}
-                ]
-            }
-        ]
-    }
-})
-
-# Easy deep access with dot notation
-backend_size = data['company.departments.0.teams.0.size']
-print(backend_size)  # 10
-
-# Or with attribute access and indexing
-frontend_team = data.company.departments[0].teams[1]
-print(frontend_team.name)  # 'Frontend'
-```
-
 ### Safe Data Exploration
 
-```python
-# Perfect for exploring unknown or inconsistent data structures
-api_response = MagicDict(some_api_data)
-
-# Won't crash even if the path doesn't exist
-if api_response.result.data.items:
-    for item in api_response.result.data.items:
-        print(item.name or 'Unnamed')
-        print(item.description or 'No description')
-
-# Safe nested checks
-if api_response.user.permissions.admin:
-    grant_admin_access()
-```
-
 ### Data Transformation
-
-```python
-# Transform API response to internal format
-api_data = MagicDict(external_api_response)
-
-internal_format = {
-    'id': api_data.user.userId or api_data.user.id,
-    'name': api_data.user.profile.fullName or 'Unknown',
-    'email': api_data.user.contact.primaryEmail or None,
-    'premium': api_data.user.subscription.tier == 'premium'
-}
-```
 
 ## Advanced Features
 
