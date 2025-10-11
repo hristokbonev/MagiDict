@@ -1,7 +1,7 @@
 [magicdict_docs.md](https://github.com/user-attachments/files/22863846/magicdict_docs.md)
 # MagicDict
 
-A powerful Python dictionary subclass that provides safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling. Designed to simplify working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
+A powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling. Designed to simplify working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
 
 ## Table of Contents
 
