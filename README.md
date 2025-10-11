@@ -332,15 +332,7 @@ md['user']['age'] = 30
 
 ## Common Use Cases
 
-### Working with JSON APIs
-
-### Configuration Files
-
-### Nested Data Structures
-
-### Safe Data Exploration
-
-### Data Transformation
+JSON APIs; Configuration Files; Nested Data Structures; Safe Data Exploration; Data Transformation
 
 ## Advanced Features
 
