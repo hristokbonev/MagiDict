@@ -390,7 +390,7 @@ regular = md.disenchant()
 
 ### Auto-completion Support
 
-`MagicDict` provides intelligent auto-completion in IPython, Jupyter notebooks and IDE's:
+`MagicDict` provides intelligent auto-completion in IPython, Jupyter notebooks and IDE's.
 
 ## Performance Considerations
 
