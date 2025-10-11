@@ -282,8 +282,8 @@ print(md.mget('my key')) # 'value2'
 print(md['my-key'])      # 'value3'
 
 # These won't work
-# print(md.1-key)        # SyntaxError
-# print(md.my key)       # SyntaxError
+print(md.1-key)        # SyntaxError
+print(md.my key)       # SyntaxError
 ```
 
 ### 3. Non-String Keys
