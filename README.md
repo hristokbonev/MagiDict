@@ -241,14 +241,6 @@ Converts a standard dictionary into a `MagicDict`.
 
 **Returns:** A `MagicDict` instance
 
-**Example:**
-
-```python
-regular_dict = {'user': {'name': 'Alice'}}
-md = enchant(regular_dict)
-print(md.user.name)  # 'Alice'
-```
-
 ### `magic_loads(s, **kwargs)`
 
 Deserializes a JSON string directly into a `MagicDict` instead of a standard dict.
