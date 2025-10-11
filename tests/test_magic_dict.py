@@ -1624,8 +1624,8 @@ class TestMagicDictAdditionalCases(TestCase):
         result = md.mget("missing", None)
         self.assertIsNone(result)
 
-    def test_mget_with_ellipsis_default(self):
-        """Test that Ellipsis is properly used as sentinel"""
+    def test_mget_with_missing_default(self):
+        """Test that missing is properly used as sentinel"""
         md = MagicDict({})
         result = md.mget("missing")
         self.assertIsInstance(result, MagicDict)
@@ -3940,11 +3940,11 @@ class TestMagicDictMissingEdgeCases(TestCase):
         self.assertEqual(md["data.0"], "zero_key")
         self.assertEqual(md["data.1"], "one_key")
 
-    def test_mget_with_ellipsis_vs_none(self):
-        """Test mget behavior with Ellipsis (default sentinel) vs None."""
+    def test_mget_with_missing_vs_none(self):
+        """Test mget behavior with missing (default sentinel) vs None."""
         md = MagicDict({"a": 1})
 
-        # With Ellipsis (default), missing keys return empty MagicDict
+        # With missing (default), missing keys return empty MagicDict
         result1 = md.mget("missing")
         self.assertIsInstance(result1, MagicDict)
 

@@ -3,7 +3,14 @@ from copy import deepcopy
 from typing import Mapping, Sequence
 
 
+_MISSING = object()
+
+
 class MagicDict(dict):
+    """A dictionary that supports attribute-style access and recursive conversion
+    of nested dictionaries into MagicDicts. It also supports safe access to missing
+    keys and keys with None values by returning empty MagicDicts, allowing for
+    safe chaining of attribute accesses."""
 
     def __init__(self, *args, **kwargs):
         """Initialize the MagicDict, recursively converting nested dicts.
@@ -200,13 +207,13 @@ class MagicDict(dict):
         """
         self.update(state)
 
-    def mget(self, key, default=Ellipsis):
+    def mget(self, key, default=_MISSING):
         """
         Safe get method that mimics attribute-style access.
         If the key doesn't exist, returns an empty MagicDict instead of raising KeyError.
         If the key exists but its value is None, returns an empty MagicDict for safe chaining.
         """
-        if default is Ellipsis:
+        if default is _MISSING:
             md = MagicDict()
             object.__setattr__(md, "_from_missing", True)
             default = md
@@ -225,7 +232,7 @@ class MagicDict(dict):
         if getattr(self, "_from_none", False) or getattr(self, "_from_missing", False):
             raise TypeError("Cannot modify NoneType or missing keys.")
 
-    def mg(self, key, default=Ellipsis):
+    def mg(self, key, default=_MISSING):
         """
         Shorthand for mget() method.
         """
