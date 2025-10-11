@@ -170,16 +170,6 @@ Safe get method that mimics attribute-style access.
 - Empty `MagicDict` if key doesn't exist (unless custom default provided)
 - Empty `MagicDict` if value is `None` (unless default explicitly set to `None`)
 
-**Examples:**
-
-```python
-md = MagicDict({'name': 'Alice', 'age': None})
-print(md.mget('name'))      # 'Alice'
-print(md.mget('missing'))   # MagicDict({})
-print(md.mget('age'))       # MagicDict({})
-print(md.mget('missing', 'N/A'))  # 'N/A'
-```
-
 #### `mg(key, default=Ellipsis)`
 
 Shorthand alias for `mget()`.
