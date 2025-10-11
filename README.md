@@ -317,6 +317,19 @@ md["missing"]["key"] = 'value'  # Raises TypeError
 
 This protection prevents silent bugs where you might accidentally try to modify a non-existent path.
 
+### 5. Setting attributes
+Setting or updating keys using dot notation is not supported. Use bracket notation instead. As with standard dicts, this is purposely restricted to avoid confusion and potential bugs.
+
+```python
+md = MagicDict({'user': {'name': 'Alice'}})
+
+md.user.name = 'Bob'  # Raises AttributeError
+md.user.age = 30      # Raises AttributeError
+# Use bracket notation instead
+md['user']['name'] = 'Bob'
+md['user']['age'] = 30
+```
+
 ## Common Use Cases
 
 ### Working with JSON APIs
