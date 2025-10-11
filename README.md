@@ -653,7 +653,8 @@ MagicDict provides additional features:
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
 
-# This raises KeyError if 'email' doesn't exist
+# These raises KeyError since 'email' doesn't exist
+email = md['user']['email']
 email = md['user.email']
 
 # This is safe
