@@ -258,7 +258,7 @@ Converts an empty `MagicDict` that was created from a `None` or missing key into
 
 **Returns:**
 
-- `None` if `obj` is an empty `MagicDict`
+- `None` if `obj` is an empty `MagicDict` created from `None` or missing key
 - `obj` otherwise
 
 ## Important Caveats
