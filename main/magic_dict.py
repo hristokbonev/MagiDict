@@ -311,7 +311,11 @@ def enchant(d: dict) -> MagicDict:
 
 
 def none(obj: Any):
-    """Convert Nonan empty MagicDicte to None, otherwise return the object as is."""
-    if isinstance(obj, MagicDict) and len(obj) == 0:
+    """Convert an empty MagicDict that was created from a None or missing key into None."""
+    if (
+        isinstance(obj, MagicDict)
+        and len(obj) == 0
+        and (getattr(obj, "_from_none", False) or getattr(obj, "_from_missing", False))
+    ):
         return None
     return obj

@@ -132,12 +132,13 @@ type(standard_dict)  # <class 'dict'>
 ```
 
 ### 9. Convert empty MagicDict to None
-Use `none()` to convert empty MagicDict instances to None:
+Use `none()` to convert empty MagicDict instances that were created from `None` or missing keys back to `None`:
 
 ```python
-md = MagicDict({'user': None})
+md = MagicDict({'user': None, 'age': 25})
 none(md.user)       # None
 none(md.user.name)  # None
+none(md.age)        # 25
 ```
 
 ## API Reference
@@ -249,7 +250,7 @@ md.user.name  # 'Alice'
 
 ### `none(obj)`
 
-Converts an empty `MagicDict` to `None`, otherwise returns the object as is.
+Converts an empty `MagicDict` that was created from a `None` or missing key into `None`. Otherwise, returns the object as is.
 
 **Parameters:**
 
