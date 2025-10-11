@@ -4,156 +4,19 @@ from typing import Mapping, Sequence
 
 
 class MagicDict(dict):
-    """
-    A dictionary subclass that allows for deep, safe, and convenient attribute-style access.
-
-    This class provides the following "magic" features:
-
-    1.  Attribute-style Access:
-        Keys can be accessed and traversed as attributes (e.g., `md.key.subkey`).
-
-    2.  Dot Notation Access in Brackets:
-        Bracket access supports dot-separated strings for deep access, including list indices
-        (e.g., `md['key.subkey']` and `md['items.0.name']`).
-
-    3.  Recursive Conversion:
-        When initialized, it recursively converts any nested dictionaries into `MagicDict`
-        instances, including those inside lists, tuples, and other sequences. This enables
-        deep attribute-style access throughout the structure.
-
-    4.  Graceful Failure on Attribute Access:
-        Accessing a non-existent key via an attribute (e.g., `md.non_existent_key`)
-        returns an empty `MagicDict` instead of raising an `AttributeError` or `KeyError`,
-        allowing for safe chaining (e.g., `md.non_existent.key.chain`).
-
-    5.  Safe Chaining for `None` Values:
-        Accessing a key whose value is `None` via an attribute (e.g., `md.key_with_none`)
-        also returns an empty `MagicDict`, allowing for safe chaining. Standard bracket
-        access (`md['key_with_none']`) will correctly return `None`.
-
-    6.  Standard `dict` Behavior Preservation:
-        It retains all standard dictionary functionality. Accessing a non-existent
-        key with bracket notation (`md['missing']`) will still raise a `KeyError`,
-        as expected from a standard `dict`.
-
-    7.  Safe `mget()` Method:
-        The `mget()` method provides the "graceful failure" behavior of attribute access
-        for any key, including those that are not valid Python identifiers.
-
-    8.  Conversion Back to Standard `dict`:
-        The `disenchant()` method converts the `MagicDict` and all nested `MagicDict`
-        instances back into standard dictionaries.
-
-
-    Examples:
-        >>> data = {'user': {'name': 'Alice', 'id': 1, 'nickname': None}, 'permissions': ['read']}
-        >>> md = MagicDict(data)
-
-        # Attribute-style access
-        >>> md.user.name
-        'Alice'
-
-        # Dot notation for nested keys
-        >>> md["user.id"]
-        1
-
-        # Standard access still works
-        >>> md['user']['id']
-        1
-
-        # Accessing a non-existent key returns empty MagicDict:
-        >>> md.user.email
-        MagicDict({})
-
-        # Accessing a non-existent nested key with dot notation raises KeyError:
-        >>> md["user.email.address"]
-        KeyError: 'email'
-
-        # Behavior with None values:
-        >>> md.user.nickname  # Attribute access is safe for chaining
-        MagicDict({})
-        >>> print(md.user['nickname']) # Bracket access returns the actual value
-        None
-
-        # Standard access for a non-existent key raises KeyError
-        >>> md.user["email"]
-        KeyError: 'email'
-
-        # Chaining non-existent keys with attribute access is safe
-        >>> md.user.address.city
-        MagicDict({})
-
-
-        # Chaining a key with a value of None is also safe
-        >>> md.user.nickname.stagename
-        MagicDict({})
-
-        # Converting back to a standard dict
-        >>> md.disenchant()
-        {'user': {'name': 'Alice', 'id': 1, 'nickname': None}, 'permissions': ['read']}
-
-
-        # --- USAGE NOTES & CAVEATS ---
-
-        1.  Key Conflicts:
-
-            Keys that conflict with standard `dict` methods must be accessed using brackets.
-            >>> md = MagicDict({'keys': 'custom_value'})
-            >>> md.keys
-            <built-in method keys of MagicDict object at ...>
-            >>> md['keys'] # Use bracket access to get the value
-            'custom_value'
-
-        2.  Invalid Identifiers:
-
-            Keys that aren't valid Python identifiers (e.g., start with a number, contain spaces)
-            must also use bracket access or the `mget()` method.
-            >>> md = MagicDict({'1-key': 'value'})
-            >>> md['1-key']
-            'value'
-            >>> md.mget('1-key')
-            'value'
-
-        3.  Non-String Keys:
-
-            Non-string keys can only be accessed using standard bracket notation or `mget()`.
-            >>> class MyKey: pass
-            >>> k = MyKey()
-            >>> md = MagicDict({k: 'value'})
-            >>> md[k]
-            'value'
-            >>> md.k
-            MagicDict({})
-
-        Summary:
-        - MagicDict allows convenient deep attribute-style access to nested dictionaries.
-        - Missing keys and None values are handled safely without raising errors.
-        - Be careful with key naming to avoid conflicts (e.g., dict methods) and invalid identifiers.
-        - All standard dict methods, behaviors and bracket notation are preserved
-    """
 
     def __init__(self, *args, **kwargs):
         """Initialize the MagicDict, recursively converting nested dicts.
-        Supports initialization with a single dict, mapping, or standard dict args/kwargs."""
+        Supports initialization with a single dict, mapping, or standard dict args/kwargs.
+        """
         super().__init__()
-        # Create memo ONCE for the entire initialization to handle circular references
         memo = {}
-        # Support initialization with either a single dict or standard dict args/kwargs
-        # Get the input dict. If a single dict positional argument was passed,
-        # use it directly (do NOT copy) so we preserve object identity for
-        # circular references. For other inputs, fall back to creating a dict
-        # (this preserves previous behavior for mappings/kwargs).
         if len(args) == 1 and not kwargs and isinstance(args[0], dict):
             input_dict = args[0]
         else:
             input_dict = dict(*args, **kwargs)
-        # Register that MagicDict as the converted version of the input dict
-        # This is crucial for circular references where the dict references itself
         memo[id(input_dict)] = self
-        # Recursively convert nested dicts into MagicDicts
-        # which would call _hook() with a fresh memo
         for k, v in input_dict.items():
-            # Use super().__setitem__ directly to bypass __setitem__ override
             super().__setitem__(k, self._hook_with_memo(v, memo))
 
     @classmethod
@@ -165,13 +28,11 @@ class MagicDict(dict):
     def _hook_with_memo(cls, item, memo):
         """Recursively converts dictionaries in collections to MagicDicts.
         Uses a memoization dict to handle circular references."""
-        item_id = id(item)  # Unique identifier for the object
-        # Check memo FIRST, before any isinstance checks
+        item_id = id(item)
         if item_id in memo:
-            return memo[item_id]  # Return already processed object to handle circular refs
+            return memo[item_id]
 
         if isinstance(item, MagicDict):
-            # Already a MagicDict, but still need to register it in memo for circular refs
             memo[item_id] = item
             return item
 
@@ -179,26 +40,21 @@ class MagicDict(dict):
             new_dict = cls()
             memo[item_id] = new_dict
             for k, v in item.items():
-                # Recursively hook nested items.
                 new_dict[k] = cls._hook_with_memo(v, memo)
             return new_dict
 
-        # Handle lists specifically. We modify in place to preserve references.
         if isinstance(item, list):
-            memo[item_id] = item  # Prevent infinite recursion on self-referential lists.
+            memo[item_id] = item
             for i, elem in enumerate(item):
                 item[i] = cls._hook_with_memo(elem, memo)
             return item
 
-        # For tuples, which are immutable, we must create a new one.
         if isinstance(item, tuple):
-            # Special handling for namedtuples to preserve their type.
-            if hasattr(item, "_fields"):  # Check for namedtuple
+            if hasattr(item, "_fields"):
                 hooked_values = tuple(cls._hook_with_memo(elem, memo) for elem in item)
                 return type(item)(*hooked_values)
             return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
 
-        # Handle other rare sequence types.
         if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
             try:
                 memo[item_id] = item
@@ -206,7 +62,6 @@ class MagicDict(dict):
                     item[i] = cls._hook_with_memo(elem, memo)
                 return item
             except TypeError:
-                # Immutable sequence, create a new one.
                 return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
 
         return item
@@ -214,51 +69,40 @@ class MagicDict(dict):
     def __getitem__(self, keys):
         """Support dot notation for nested keys in addition to standard dict access."""
         try:
-            # First try standard dict access
             return super().__getitem__(keys)
         except KeyError:
-            # Check if keys are ["a.b.c"] format
             if isinstance(keys, str) and "." in keys:
                 keys = keys.split(".")
                 obj = self
                 for key in keys:
-                    # If obj is a MagicDict or dict, do standard access
                     if isinstance(obj, Mapping):
                         obj = obj[key]
-                    # If obj is a sequence (like list/tuple), try to access by index
-                    elif isinstance(obj, Sequence) and not isinstance(obj, (str, bytes)):
+                    elif isinstance(obj, Sequence) and not isinstance(
+                        obj, (str, bytes)
+                    ):
                         obj = obj[int(key)]
-                    # Otherwise, we cannot traverse further and raise KeyError
                     else:
                         raise
                 return obj
-            # Neither standard nor dot notation works, reraise
             raise
 
     def __getattr__(self, name):
         """Enables attribute-style access. Returns a safe, empty MagicDict
         for missing keys or keys with a value of None."""
-        # Use super().__contains__ to avoid recursion with __getattr__
         if super().__contains__(name):
             value = self[name]
             if value is None:
-                # Return an empty, temporary MagicDict for safe chaining.
                 md = MagicDict()
-                # Mark it so we can prevent modifications.
                 object.__setattr__(md, "_from_none", True)
                 return md
-            # Ensure any plain dicts are hooked, in case they were added after initialization.
             if isinstance(value, dict) and not isinstance(value, MagicDict):
                 value = MagicDict(value)
                 self[name] = value
             return value
         try:
-            # Fallback to standard attribute access for dict methods, etc.
             return super().__getattribute__(name)
-        # If key doesn't exist, return an empty MagicDict for safe chaining.
         except AttributeError:
             md = MagicDict()
-            # Mark it so we can prevent modifications.
             object.__setattr__(md, "_from_missing", True)
             return md
 
@@ -362,19 +206,14 @@ class MagicDict(dict):
         If the key doesn't exist, returns an empty MagicDict instead of raising KeyError.
         If the key exists but its value is None, returns an empty MagicDict for safe chaining.
         """
-        # If default is not provided, return a MagicDict for missing keys.
         if default is Ellipsis:
             md = MagicDict()
-            # Mark it so we can prevent modifications.
             object.__setattr__(md, "_from_missing", True)
             default = md
-        # Use super().__contains__ to avoid recursion with __getattr__
         if super().__contains__(key):
             value = self[key]
-            # If the value is None and default is not explicitly set to None,
             if value is None and default is not None:
                 md = MagicDict()
-                # Mark it so we can prevent modifications.
                 object.__setattr__(md, "_from_none", True)
                 return md
             return value
@@ -397,17 +236,14 @@ class MagicDict(dict):
         Convert MagicDict and all nested MagicDicts back into standard dicts,
         handling circular references gracefully.
         """
-        memo = {}  # Memoization dict to track visited object IDs
+        memo = {}
 
         def _disenchant_recursive(item):
-            # If we've seen this object before, return its converted counterpart.
             item_id = id(item)
             if item_id in memo:
                 return memo[item_id]
 
-            # Use elif instead of separate if statements to avoid double-processing
             if isinstance(item, MagicDict):
-                # Create a new dict, store it in memo *before* recursing.
                 new_dict = {}
                 memo[item_id] = new_dict
                 for k, v in item.items():
@@ -422,28 +258,24 @@ class MagicDict(dict):
                 return new_dict
 
             elif isinstance(item, tuple):
-                # Special handling for namedtuples to preserve their type.
-                if hasattr(item, "_fields"):  # Check if it's a namedtuple
-                    disenchanted_values = tuple(_disenchant_recursive(elem) for elem in item)
-                    # Recreate the namedtuple with its original class and disenchanted values.
+                if hasattr(item, "_fields"):
+                    disenchanted_values = tuple(
+                        _disenchant_recursive(elem) for elem in item
+                    )
                     return type(item)(*disenchanted_values)
-                # It's a regular tuple, so just convert its contents.
                 return tuple(_disenchant_recursive(elem) for elem in item)
 
             elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
-                # Handle lists and other sequences.
-                # Create a new list, store it in the memo *before* recursing.
                 new_list = []
                 memo[item_id] = new_list
                 for elem in item:
                     new_list.append(_disenchant_recursive(elem))
 
-                # Try to convert back to original type if it's not a plain list
                 if not isinstance(item, list):
                     try:
                         return type(item)(new_list)
                     except TypeError:
-                        return new_list  # Fallback to list
+                        return new_list
                 return new_list
 
             elif isinstance(item, (set, frozenset)):
