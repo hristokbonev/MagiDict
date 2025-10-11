@@ -616,7 +616,4 @@ print(md.value)  # MagicDict({})
 # Use bracket access to get actual None
 print(md['value'])  # None
 
-# Or check explicitly
-if 'value' in md and md['value'] is None:
-    print("Value is explicitly None")
 ```
