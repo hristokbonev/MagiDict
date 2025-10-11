@@ -10,7 +10,7 @@ import pickle
 from types import MappingProxyType
 import json
 import weakref
-from main.magic_dict import MagicDict, enchant, magic_loads
+from main.magic_dict import MagicDict, enchant, magic_loads, none
 
 
 md = MagicDict(
@@ -3339,6 +3339,7 @@ class TestMagicDictAdvanced(TestCase):
 
 class TestMagicDictEdgeCases3(TestCase):
     """Additional edge cases and clarifications."""
+
     def test_exact_key_with_dot_preferred_over_nested(self):
         """If a dict has an exact key that contains a dot it should be returned
         by __getitem__ instead of attempting dot-traversal."""
@@ -4782,3 +4783,148 @@ class TestHelperFunctionsAgain(TestCase):
 
         # 3. Verify the contents were correctly disenchanted.
         self.assertEqual(disenchanted["data"], [{"a": 1}, {"b": 2}])
+
+
+class TestNoneFunction(TestCase):
+    """Test suite for the none() function."""
+
+    def test_none_with_missing_key_magicdict(self):
+        """Test that none() returns None for MagicDict from missing key."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key  # Accessing missing key creates empty MagicDict
+        result = none(missing)
+        self.assertIsNone(result)
+
+    def test_none_with_none_value_magicdict(self):
+        """Test that none() returns None for MagicDict from None value."""
+        md = MagicDict({"a": None})
+        none_value = md.a  # Accessing None value creates empty MagicDict
+        result = none(none_value)
+        self.assertIsNone(result)
+
+    def test_none_with_regular_empty_magicdict(self):
+        """Test that none() returns the object for regular empty MagicDict."""
+        md = MagicDict()
+        result = none(md)
+        self.assertIsInstance(result, MagicDict)
+        self.assertEqual(len(result), 0)
+        self.assertFalse(getattr(result, "_from_none", False))
+        self.assertFalse(getattr(result, "_from_missing", False))
+
+    def test_none_with_non_empty_magicdict(self):
+        """Test that none() returns the object for non-empty MagicDict."""
+        md = MagicDict({"a": 1, "b": 2})
+        result = none(md)
+        self.assertIs(result, md)
+        self.assertEqual(result, {"a": 1, "b": 2})
+
+    def test_none_with_non_magicdict_objects(self):
+        """Test that none() returns the object unchanged for non-MagicDict types."""
+        # Test with various types
+        test_cases = [
+            None,
+            42,
+            "string",
+            [1, 2, 3],
+            {"regular": "dict"},
+            (1, 2, 3),
+            {1, 2, 3},
+        ]
+
+        for obj in test_cases:
+            with self.subTest(obj=obj):
+                result = none(obj)
+                self.assertIs(result, obj)
+
+    def test_none_with_nested_access(self):
+        """Test none() with nested missing keys."""
+        md = MagicDict({"a": {"b": {"c": 1}}})
+        missing_nested = md.x.y.z  # Deep missing access
+        result = none(missing_nested)
+        self.assertIsNone(result)
+
+    def test_none_with_mget_missing(self):
+        """Test none() with mget() on missing key."""
+        md = MagicDict({"a": 1})
+        missing = md.mget("missing_key")
+        result = none(missing)
+        self.assertIsNone(result)
+
+    def test_none_with_mget_none_value(self):
+        """Test none() with mget() on None value."""
+        md = MagicDict({"a": None})
+        none_val = md.mget("a")
+        result = none(none_val)
+        self.assertIsNone(result)
+
+    def test_none_with_chained_none_values(self):
+        """Test none() with chained access through None values."""
+        md = MagicDict({"a": None})
+        chained = md.a.b.c.d  # Chain through None
+        result = none(chained)
+        self.assertIsNone(result)
+
+    def test_none_preserves_regular_none(self):
+        """Test that none() passes through actual None values."""
+        result = none(None)
+        self.assertIsNone(result)
+
+    def test_none_with_empty_magicdict_with_items_added(self):
+        """Test that none() returns object if MagicDict has items."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key  # Get empty MagicDict from missing key
+
+        # Before adding items, it should return None
+        self.assertIsNone(none(missing))
+
+        # But we can't add items because it's protected
+        with self.assertRaises(TypeError):
+            missing["x"] = 1
+
+
+class TestNoneFunctionIntegration(TestCase):
+    """Integration tests showing practical usage of none() function."""
+
+    def test_safe_navigation_pattern(self):
+        """Test using none() for safe navigation pattern."""
+        data = MagicDict({"user": {"profile": {"name": "John"}}})
+
+        # Safe access to existing data
+        name = none(data.user.profile.name)
+        self.assertEqual(name, "John")
+
+        # Safe access to missing data
+        age = none(data.user.profile.age)
+        self.assertIsNone(age)
+
+        # Safe access to deeply missing data
+        missing = none(data.missing.deep.nested.value)
+        self.assertIsNone(missing)
+
+    def test_default_value_pattern(self):
+        """Test using none() with default values."""
+        data = MagicDict({"a": 1})
+
+        # Use none() with or for default values
+        value1 = none(data.a) or "default"
+        self.assertEqual(value1, 1)
+
+        value2 = none(data.missing) or "default"
+        self.assertEqual(value2, "default")
+
+    def test_conditional_processing(self):
+        """Test using none() for conditional processing."""
+        data = MagicDict({"config": {"enabled": True, "timeout": None}})
+
+        # Process only if value exists
+        enabled = none(data.config.enabled)
+        if enabled is not None:
+            self.assertTrue(enabled)
+
+        timeout = none(data.config.timeout)
+        if timeout is not None:
+            self.fail("Should be None")
+
+        missing = none(data.config.missing)
+        if missing is not None:
+            self.fail("Should be None")
