@@ -127,7 +127,7 @@ print(md.mget('missing', 'default'))  # 'default'
 
 ### 8. Convert Back to Standard Dict
 
-Use `disenchant()` to convert back to standard Python dictionaries:
+Use `disenchant()` to convert back to a standard Python `dict`:
 
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
