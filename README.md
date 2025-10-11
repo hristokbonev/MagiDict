@@ -386,6 +386,16 @@ regular = md.disenchant()
 
 ## Performance Considerations
 
+### Tested:
+- All standard and custom functionality
+- Circular and self references through pickle/deepcopy/disenchant
+- Concurrent access patterns (multi-threaded reads/writes)
+- Protected MagicDict mutation attempts
+- Deep nesting with recursion limits and stack overflow prevention
+- Type preservation through operations
+
+
+
 ### Best Practices
 
 **Good use cases:**
