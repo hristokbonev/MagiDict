@@ -328,10 +328,6 @@ md['user']['name'] = 'Bob'
 md['user']['age'] = 30
 ```
 
-## Common Use Cases
-
-JSON APIs; Configuration Files; Nested Data Structures; Safe Data Exploration; Data Transformation
-
 ## Advanced Features
 
 ### Pickle Support
