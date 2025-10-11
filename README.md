@@ -232,7 +232,6 @@ Deserializes a JSON string directly into a `MagicDict` instead of a standard dic
 **Example:**
 
 ```python
-import json
 
 json_string = '{"user": {"name": "Alice", "age": 30}}'
 md = magic_loads(json_string)
@@ -332,7 +331,6 @@ md['user']['age'] = 30
 `MagicDict` supports pickling and unpickling:
 
 ```python
-import pickle
 
 md = MagicDict({'data': {'nested': 'value'}})
 pickled = pickle.dumps(md)
@@ -343,7 +341,6 @@ restored.data.nested  # 'value'
 ### Deep Copy Support
 
 ```python
-from copy import deepcopy
 
 md1 = MagicDict({'user': {'name': 'Alice'}})
 md2 = deepcopy(md1)
