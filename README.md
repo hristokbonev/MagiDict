@@ -654,10 +654,7 @@ MagicDict provides additional features:
 md = MagicDict({'user': {'name': 'Alice'}})
 
 # This raises KeyError if 'email' doesn't exist
-try:
-    email = md['user.email']
-except KeyError:
-    print("Use attribute access for safe chaining instead")
+email = md['user.email']
 
 # This is safe
 email = md.user.email or 'no-email'
@@ -669,12 +666,7 @@ email = md.user.email or 'no-email'
 md = MagicDict({'user': None})
 
 # This fails - you're trying to modify a protected empty MagicDict
-try:
-    md.user.name = 'Alice'
-except TypeError:
-    # Instead, set the parent value first
-    md['user'] = {'name': 'Alice'}
-    print(md.user.name)  # 'Alice'
+md.user.name = 'Alice'
 ```
 
 ### Unexpected Empty MagicDict
