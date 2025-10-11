@@ -692,7 +692,3 @@ print(md['value'])  # None
 if 'value' in md and md['value'] is None:
     print("Value is explicitly None")
 ```
-
-## License
-
-This code is provided as-is. Feel free to use, modify, and distribute as needed.
