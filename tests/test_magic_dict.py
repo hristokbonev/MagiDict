@@ -4808,6 +4808,7 @@ class TestNoneFunction(TestCase):
         result = none(md)
         self.assertIsInstance(result, MagicDict)
         self.assertEqual(len(result), 0)
+        self.assertEqual(md, result)
         self.assertFalse(getattr(result, "_from_none", False))
         self.assertFalse(getattr(result, "_from_missing", False))
 
