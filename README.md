@@ -328,16 +328,10 @@ Empty `MagicDict` instances returned from missing keys or `None` values are prot
 ```python
 md = MagicDict({'user': None})
 
-try:
-    md.user.name = 'Alice'  # Raises TypeError
-except TypeError as e:
-    print(e)  # "Cannot modify NoneType or missing keys."
+md.user["name"] = 'Alice'  # Raises TypeError
 
 # Same for missing keys
-try:
-    md.missing.key = 'value'  # Raises TypeError
-except TypeError:
-    pass
+md["missing"]["key"] = 'value'  # Raises TypeError
 ```
 
 This protection prevents silent bugs where you might accidentally try to modify a non-existent path.
