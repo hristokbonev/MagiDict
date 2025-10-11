@@ -157,7 +157,7 @@ md = MagicDict(d)
 
 #### `mget(key, default=...)`
 
-Safe get method that mimics attribute-style access.
+Safe get method that mimics `dict`'s `get()`, but returns an empty `MagicDict` for missing keys or `None` values unless a custom default is provided.
 
 **Parameters:**
 
