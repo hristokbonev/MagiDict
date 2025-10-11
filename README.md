@@ -30,8 +30,8 @@ Access dictionary keys using dot notation instead of bracket notation:
 
 ```python
 md = MagicDict({'user': {'name': 'Alice', 'age': 30}})
-print(md.user.name)  # 'Alice'
-print(md.user.age)   # 30
+md.user.name # 'Alice'
+md.user.age  # 30
 ```
 
 ### 2. Dot Notation in Brackets
@@ -46,8 +46,8 @@ md = MagicDict({
     ]
 })
 
-print(md['users.0.name'])  # 'Alice'
-print(md['users.1.id'])    # 2
+md['users.0.name']  # 'Alice'
+md['users.1.id']    # 2
 ```
 
 ### 3. Recursive Conversion
@@ -65,7 +65,7 @@ data = {
     }
 }
 md = MagicDict(data)
-print(md.company.departments.engineering.employees)  # 50
+md.company.departments.engineering.employees  # 50
 ```
 
 ### 4. Graceful Failure
@@ -76,8 +76,7 @@ Accessing non-existent keys returns an empty `MagicDict` instead of raising erro
 md = MagicDict({'user': {'name': 'Alice'}})
 
 # No error, returns empty MagicDict
-result = md.user.email.address.street
-print(result)  # MagicDict({})
+md.user.email.address.street # MagicDict({})
 
 # Safe chaining
 if md.settings.theme.dark_mode:
@@ -92,10 +91,10 @@ Keys with `None` values can be safely chained:
 ```python
 md = MagicDict({'user': {'nickname': None}})
 
-print(md.user.nickname.stage_name)  # MagicDict({})
+md.user.nickname.stage_name  # MagicDict({})
 
 # Bracket access returns the actual None value
-print(md.user['nickname'])  # None
+md.user['nickname']  # None
 ```
 
 ### 6. Standard Dictionary Behavior Preserved
@@ -110,16 +109,16 @@ All standard `dict` methods and behaviors work as expected. For example missing 
 md = MagicDict({'1-invalid': 'value', 'valid': None})
 
 # Works with invalid identifiers
-print(md.mget('1-invalid'))  # 'value'
+md.mget('1-invalid')  # 'value'
 
 # Returns empty MagicDict for missing keys
-print(md.mget('missing'))  # MagicDict({})
+md.mget('missing')  # MagicDict({})
 
 # Shorthand version
-print(md.mg('1-invalid'))  # 'value'
+md.mg('1-invalid')  # 'value'
 
 # Provide custom default
-print(md.mget('missing', 'default'))  # 'default'
+md.mget('missing', 'default')  # 'default'
 ```
 
 ### 8. Convert Back to Standard Dict
@@ -129,7 +128,7 @@ Use `disenchant()` to convert back to a standard Python `dict`:
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
 standard_dict = md.disenchant()
-print(type(standard_dict))  # <class 'dict'>
+type(standard_dict)  # <class 'dict'>
 ```
 
 ## API Reference
@@ -186,7 +185,7 @@ Converts the `MagicDict` and all nested `MagicDict` instances back to standard P
 ```python
 md = MagicDict({'nested': {'data': [1, 2, 3]}})
 regular_dict = md.disenchant()
-print(type(regular_dict))  # <class 'dict'>
+type(regular_dict)  # <class 'dict'>
 ```
 
 ### Standard Dict Methods
@@ -237,7 +236,7 @@ import json
 
 json_string = '{"user": {"name": "Alice", "age": 30}}'
 md = magic_loads(json_string)
-print(md.user.name)  # 'Alice'
+md.user.name  # 'Alice'
 ```
 
 ## Important Caveats
@@ -250,15 +249,15 @@ Keys that conflict with standard `dict` methods must be accessed using brackets,
 md = MagicDict({'keys': 'my_value', 'items': 'another_value'})
 
 # These return dict methods, not your values
-print(md.keys)   # <built-in method keys...>
-print(md.items)  # <built-in method items...>
+md.keys   # <built-in method keys...>
+md.items  # <built-in method items...>
 
 # Use bracket access instead
-print(md['keys'])   # 'my_value'
-print(md['items'])  # 'another_value'
+md['keys']   # 'my_value'
+md['items']  # 'another_value'
 
 # Or use mget()
-print(md.mget('keys'))  # 'my_value'
+md.mget('keys')  # 'my_value'
 ```
 
 **Common conflicting keys:** `keys`, `values`, `items`, `get`, `pop`, `update`, `clear`, `copy`, `setdefault`, `fromkeys`
@@ -275,9 +274,9 @@ md = MagicDict({
 })
 
 # Must use brackets or mget()
-print(md['1-key'])       # 'value1'
-print(md.mget('my key')) # 'value2'
-print(md['my-key'])      # 'value3'
+md['1-key']       # 'value1'
+md.mget('my key') # 'value2'
+md['my-key']      # 'value3'
 
 # These won't work
 print(md.1-key)        # SyntaxError
@@ -291,9 +290,9 @@ Non-string keys can only be accessed using standard bracket notation or `mget()`
 ```python
 md = MagicDict({1: 'one', (2, 3): 'tuple_key'})
 
-print(md[1])        # 'one'
-print(md[(2, 3)])   # 'tuple_key'
-print(md.mget(1))   # 'one'
+md[1]        # 'one'
+md[(2, 3)]   # 'tuple_key'
+md.mget(1)   # 'one'
 
 print(md.1)  # SyntaxError
 ```
@@ -338,7 +337,7 @@ import pickle
 md = MagicDict({'data': {'nested': 'value'}})
 pickled = pickle.dumps(md)
 restored = pickle.loads(pickled)
-print(restored.data.nested)  # 'value'
+restored.data.nested  # 'value'
 ```
 
 ### Deep Copy Support
@@ -350,8 +349,8 @@ md1 = MagicDict({'user': {'name': 'Alice'}})
 md2 = deepcopy(md1)
 md2.user.name = 'Bob'
 
-print(md1.user.name)  # 'Alice' (unchanged)
-print(md2.user.name)  # 'Bob'
+md1.user.name  # 'Alice' (unchanged)
+md2.user.name  # 'Bob'
 ```
 
 ### In-Place Updates with `|=` Operator
@@ -361,7 +360,7 @@ Python 3.9+ dict merge operator is supported:
 ```python
 md = MagicDict({'a': 1})
 md |= {'b': 2, 'c': 3}
-print(md)  # MagicDict({'a': 1, 'b': 2, 'c': 3})
+md  # MagicDict({'a': 1, 'b': 2, 'c': 3})
 ```
 
 ### Circular Reference Handling
@@ -373,8 +372,8 @@ md = MagicDict({'name': 'root'})
 md['self'] = md  # Circular reference
 
 # Access works
-print(md.self.name)  # 'root'
-print(md.self.self.name)  # 'root'
+md.self.name  # 'root'
+md.self.self.name  # 'root'
 
 # Safely converts back to dict
 regular = md.disenchant()
@@ -477,8 +476,8 @@ md.user.name = 'Alice' #TypeError
 ```python
 md = MagicDict({'value': None})
 
-print(md.value)  # MagicDict({})
+md.value  # MagicDict({})
 
 # Use bracket access to get actual None
-print(md['value'])  # None
+md['value']  # None
 ```
