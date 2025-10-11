@@ -103,23 +103,7 @@ print(md.user['nickname'])  # None
 
 ### 6. Standard Dictionary Behavior Preserved
 
-All standard `dict` methods and behaviors work as expected:
-
-```python
-md = MagicDict({'a': 1, 'b': 2})
-
-# Standard operations work
-md['c'] = 3
-print(len(md))           # 3
-print(list(md.keys()))   # ['a', 'b', 'c']
-print('a' in md)         # True
-
-# Missing keys with brackets raise KeyError as expected
-try:
-    value = md['missing']
-except KeyError:
-    print("Key not found")
-```
+All standard `dict` methods and behaviors work as expected. For example missing keys with brackets raise KeyError as expected
 
 ### 7. Safe `mget()` Method
 
