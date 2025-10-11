@@ -94,7 +94,6 @@ Keys with `None` values can be safely chained:
 ```python
 md = MagicDict({'user': {'nickname': None}})
 
-# Attribute access returns empty MagicDict for safe chaining
 print(md.user.nickname.stage_name)  # MagicDict({})
 
 # Bracket access returns the actual None value
@@ -298,7 +297,6 @@ print(md[1])        # 'one'
 print(md[(2, 3)])   # 'tuple_key'
 print(md.mget(1))   # 'one'
 
-# Attribute access won't work for non-string keys
 # print(md.1)  # SyntaxError
 ```
 
@@ -309,10 +307,10 @@ Empty `MagicDict` instances returned from missing keys or `None` values are prot
 ```python
 md = MagicDict({'user': None})
 
-md.user["name"] = 'Alice'  # Raises TypeError
+md.user["name"] = 'Alice'  # TypeError
 
 # Same for missing keys
-md["missing"]["key"] = 'value'  # Raises TypeError
+md["missing"]["key"] = 'value'  # TypeError
 ```
 
 This protection prevents silent bugs where you might accidentally try to modify a non-existent path.
@@ -482,9 +480,8 @@ MagicDict provides additional features:
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
 
-# These raises KeyError since 'email' doesn't exist
-email = md['user']['email']
-email = md['user.email']
+email = md['user']['email'] #KeyError
+email = md['user.email'] #KeyError
 
 # This is safe
 email = md.user.email or 'no-email'
@@ -495,8 +492,7 @@ email = md.user.email or 'no-email'
 ```python
 md = MagicDict({'user': None})
 
-# This fails - you're trying to modify a protected empty MagicDict
-md.user.name = 'Alice'
+md.user.name = 'Alice' #TypeError
 ```
 
 ### Unexpected Empty MagicDict
@@ -504,10 +500,8 @@ md.user.name = 'Alice'
 ```python
 md = MagicDict({'value': None})
 
-# Attribute access returns empty MagicDict for None
 print(md.value)  # MagicDict({})
 
 # Use bracket access to get actual None
 print(md['value'])  # None
-
 ```
