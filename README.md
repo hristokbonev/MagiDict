@@ -107,7 +107,7 @@ All standard `dict` methods and behaviors work as expected. For example missing 
 
 ### 7. Safe `mget()` Method
 
-Access any key safely, even invalid Python identifiers:
+`mget` is MagicDict's native `get` method. Unless a custom default is provided, it returns an empty `MagicDict` for missing keys or `None` values:
 
 ```python
 md = MagicDict({'1-invalid': 'value', 'valid': None})
