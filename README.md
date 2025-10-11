@@ -131,6 +131,15 @@ standard_dict = md.disenchant()
 type(standard_dict)  # <class 'dict'>
 ```
 
+### 9. Convert empty MagicDict to None
+Use `none()` to convert empty MagicDict instances to None:
+
+```python
+md = MagicDict({'user': None})
+none(md.user)       # None
+none(md.user.name)  # None
+```
+
 ## API Reference
 
 ### Constructor
@@ -237,6 +246,19 @@ json_string = '{"user": {"name": "Alice", "age": 30}}'
 md = magic_loads(json_string)
 md.user.name  # 'Alice'
 ```
+
+### `none(obj)`
+
+Converts an empty `MagicDict` to `None`, otherwise returns the object as is.
+
+**Parameters:**
+
+- `obj`: The object to check
+
+**Returns:**
+
+- `None` if `obj` is an empty `MagicDict`
+- `obj` otherwise
 
 ## Important Caveats
 

@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 
 _MISSING = object()
@@ -308,3 +308,10 @@ def enchant(d: dict) -> MagicDict:
     if not isinstance(d, dict):
         raise TypeError(f"Expected dict, got {type(d).__name__}")
     return MagicDict(d)
+
+
+def none(obj: Any):
+    """Convert Nonan empty MagicDicte to None, otherwise return the object as is."""
+    if isinstance(obj, MagicDict) and len(obj) == 0:
+        return None
+    return obj
