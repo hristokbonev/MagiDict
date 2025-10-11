@@ -155,7 +155,7 @@ md = MagicDict(d)
 
 ### Methods
 
-#### `mget(key, default=Ellipsis)`
+#### `mget(key, default=...)`
 
 Safe get method that mimics attribute-style access.
 
@@ -170,7 +170,7 @@ Safe get method that mimics attribute-style access.
 - Empty `MagicDict` if key doesn't exist (unless custom default provided)
 - Empty `MagicDict` if value is `None` (unless default explicitly set to `None`)
 
-#### `mg(key, default=Ellipsis)`
+#### `mg(key, default=...)`
 
 Shorthand alias for `mget()`.
 
