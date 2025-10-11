@@ -22,11 +22,7 @@ A powerful Python dictionary subclass that provides safe and convenient attribut
 
 ## Installation
 
-Simply copy the `MagicDict` class into your project. No external dependencies required (uses only Python standard library).
-
-```python
-from magic_dict import MagicDict, enchant, magic_loads
-```
+Simply copy the `MagicDict` class into your project.
 
 ## Key Features
 
