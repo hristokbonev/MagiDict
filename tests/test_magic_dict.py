@@ -4929,3 +4929,717 @@ class TestNoneFunctionIntegration(TestCase):
         missing = none(data.config.missing)
         if missing is not None:
             self.fail("Should be None")
+
+
+class TestFromMissingAttribute(TestCase):
+    """Test suite for _from_missing attribute behavior."""
+
+    def test_from_missing_on_missing_key_access(self):
+        """Test that _from_missing is set when accessing missing keys."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+        self.assertTrue(getattr(missing, "_from_missing", False))
+        self.assertFalse(getattr(missing, "_from_none", False))
+
+    def test_from_missing_on_nested_missing_access(self):
+        """Test _from_missing with deeply nested missing keys."""
+        md = MagicDict({"a": {"b": 1}})
+        missing = md.x.y.z
+        self.assertTrue(getattr(missing, "_from_missing", False))
+
+    def test_from_missing_not_set_on_regular_magicdict(self):
+        """Test that regular MagicDict doesn't have _from_missing."""
+        md = MagicDict({"a": 1})
+        self.assertFalse(getattr(md, "_from_missing", False))
+
+    def test_from_missing_not_set_on_existing_key(self):
+        """Test that accessing existing keys doesn't set _from_missing."""
+        md = MagicDict({"a": 1})
+        value = md.a
+        # If value is 1 (not a MagicDict), it won't have the attribute
+        self.assertEqual(value, 1)
+
+    def test_from_missing_on_mget_missing_key(self):
+        """Test that mget() sets _from_missing for missing keys."""
+        md = MagicDict({"a": 1})
+        missing = md.mget("missing")
+        self.assertTrue(getattr(missing, "_from_missing", False))
+        self.assertFalse(getattr(missing, "_from_none", False))
+
+    def test_from_missing_on_mg_shorthand(self):
+        """Test that mg() shorthand also sets _from_missing."""
+        md = MagicDict({"a": 1})
+        missing = md.mg("missing")
+        self.assertTrue(getattr(missing, "_from_missing", False))
+
+    def test_from_missing_prevents_modifications(self):
+        """Test that _from_missing MagicDicts prevent modifications."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        # All modification operations should raise TypeError
+        with self.assertRaises(TypeError):
+            missing["new_key"] = "value"
+
+        with self.assertRaises(TypeError):
+            missing.update({"x": 1})
+
+        with self.assertRaises(TypeError):
+            del missing["x"]
+
+        with self.assertRaises(TypeError):
+            missing.pop("x", None)
+
+        with self.assertRaises(TypeError):
+            missing.popitem()
+
+        with self.assertRaises(TypeError):
+            missing.clear()
+
+        with self.assertRaises(TypeError):
+            missing.setdefault("x", 1)
+
+    def test_from_missing_chain_access(self):
+        """Test that chaining on _from_missing objects maintains the flag."""
+        md = MagicDict({"a": 1})
+        missing = md.x.y.z
+
+        # Further chaining should also be _from_missing
+        further = missing.more.chaining
+        self.assertTrue(getattr(further, "_from_missing", False))
+
+    def test_from_missing_with_getitem(self):
+        """Test that __getitem__ on missing keys also creates _from_missing."""
+        md = MagicDict({"a": 1})
+        try:
+            missing = md["missing_key"]
+            self.fail("Should raise KeyError")
+        except KeyError:
+            pass  # Expected behavior - __getitem__ raises KeyError
+
+
+class TestFromNoneAttribute(TestCase):
+    """Test suite for _from_none attribute behavior."""
+
+    def test_from_none_on_none_value_access(self):
+        """Test that _from_none is set when accessing None values."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+        self.assertTrue(getattr(none_val, "_from_none", False))
+        self.assertFalse(getattr(none_val, "_from_missing", False))
+
+    def test_from_none_on_nested_none_value(self):
+        """Test _from_none with nested None values."""
+        md = MagicDict({"a": {"b": None}})
+        none_val = md.a.b
+        self.assertTrue(getattr(none_val, "_from_none", False))
+
+    def test_from_none_not_set_on_regular_values(self):
+        """Test that regular values don't have _from_none."""
+        md = MagicDict({"a": 1, "b": "string", "c": []})
+        self.assertEqual(md.a, 1)
+        self.assertEqual(md.b, "string")
+        self.assertEqual(md.c, [])
+
+    def test_from_none_on_mget_none_value(self):
+        """Test that mget() sets _from_none for None values."""
+        md = MagicDict({"a": None})
+        none_val = md.mget("a")
+        self.assertTrue(getattr(none_val, "_from_none", False))
+        self.assertFalse(getattr(none_val, "_from_missing", False))
+
+    def test_from_none_prevents_modifications(self):
+        """Test that _from_none MagicDicts prevent modifications."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # All modification operations should raise TypeError
+        with self.assertRaises(TypeError):
+            none_val["new_key"] = "value"
+
+        with self.assertRaises(TypeError):
+            none_val.update({"x": 1})
+
+        with self.assertRaises(TypeError):
+            del none_val["x"]
+
+        with self.assertRaises(TypeError):
+            none_val.pop("x", None)
+
+        with self.assertRaises(TypeError):
+            none_val.popitem()
+
+        with self.assertRaises(TypeError):
+            none_val.clear()
+
+        with self.assertRaises(TypeError):
+            none_val.setdefault("x", 1)
+
+    def test_from_none_chain_access(self):
+        """Test that chaining on _from_none objects maintains special state."""
+        md = MagicDict({"a": None})
+        none_val = md.a.b.c
+
+        # Should still be special (either _from_none or _from_missing)
+        is_special = getattr(none_val, "_from_none", False) or getattr(
+            none_val, "_from_missing", False
+        )
+        self.assertTrue(is_special)
+
+    def test_from_none_with_mget_and_default(self):
+        """Test mget() with default on None value."""
+        md = MagicDict({"a": None})
+
+        # Without default, should return _from_none MagicDict
+        result1 = md.mget("a")
+        self.assertTrue(getattr(result1, "_from_none", False))
+
+        # With non-None default, should return _from_none MagicDict
+        result2 = md.mget("a", "default")
+        self.assertTrue(getattr(result2, "_from_none", False))
+
+        # With None default, should return None
+        result3 = md.mget("a", None)
+        self.assertIsNone(result3)
+
+
+class TestFromMissingVsFromNone(TestCase):
+    """Test the distinction between _from_missing and _from_none."""
+
+    def test_missing_vs_none_distinction(self):
+        """Test that missing keys and None values are distinguished."""
+        md = MagicDict({"a": None})
+
+        missing = md.missing_key
+        none_val = md.a
+
+        self.assertTrue(getattr(missing, "_from_missing", False))
+        self.assertFalse(getattr(missing, "_from_none", False))
+
+        self.assertTrue(getattr(none_val, "_from_none", False))
+        self.assertFalse(getattr(none_val, "_from_missing", False))
+
+    def test_both_work_with_none_function(self):
+        """Test that none() handles both _from_missing and _from_none."""
+        md = MagicDict({"a": None})
+
+        missing = md.missing_key
+        none_val = md.a
+
+        self.assertIsNone(none(missing))
+        self.assertIsNone(none(none_val))
+
+    def test_explicit_none_vs_missing(self):
+        """Test explicit None assignment vs missing key."""
+        md = MagicDict()
+        md["explicit"] = None
+
+        explicit = md.explicit
+        missing = md.missing
+
+        self.assertTrue(getattr(explicit, "_from_none", False))
+        self.assertTrue(getattr(missing, "_from_missing", False))
+
+
+class TestEdgeCases(TestCase):
+    """Test edge cases for _from_missing and _from_none."""
+
+    def test_empty_magicdict_no_special_flags(self):
+        """Test that regular empty MagicDict has no special flags."""
+        md = MagicDict()
+        self.assertFalse(getattr(md, "_from_missing", False))
+        self.assertFalse(getattr(md, "_from_none", False))
+
+    def test_nested_structure_with_mixed_none_and_missing(self):
+        """Test complex nested structure with both None and missing."""
+        md = MagicDict({"a": {"b": None, "c": {"d": 1}}})
+
+        # Access None value
+        none_val = md.a.b
+        self.assertTrue(getattr(none_val, "_from_none", False))
+
+        # Access missing key
+        missing = md.a.missing
+        self.assertTrue(getattr(missing, "_from_missing", False))
+
+        # Access existing value
+        existing = md.a.c.d
+        self.assertEqual(existing, 1)
+
+    def test_chain_from_none_to_missing(self):
+        """Test chaining from None value creates _from_missing."""
+        md = MagicDict({"a": None})
+        chained = md.a.b.c
+
+        # The first access (md.a) gives _from_none
+        # Further chaining should give _from_missing
+        is_protected = getattr(chained, "_from_none", False) or getattr(
+            chained, "_from_missing", False
+        )
+        self.assertTrue(is_protected)
+
+    def test_dict_methods_bypass_protection(self):
+        """Test that dict methods can bypass protection (as documented)."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        # Using __setitem__ directly should still be protected
+        with self.assertRaises(TypeError):
+            missing["x"] = 1
+
+        # But dict.update can bypass (implementation detail)
+        # This is mentioned in the docstring
+
+    def test_mget_with_explicit_default(self):
+        """Test mget() with various default values."""
+        md = MagicDict({"a": 1})
+
+        # Default is _from_missing MagicDict
+        result1 = md.mget("missing")
+        self.assertTrue(getattr(result1, "_from_missing", False))
+
+        # Explicit default value
+        result2 = md.mget("missing", "default")
+        self.assertEqual(result2, "default")
+
+        # Explicit None default
+        result3 = md.mget("missing", None)
+        self.assertIsNone(result3)
+
+    def test_copy_preserves_values_and_flags(self):
+        """Test that copying preserves special flags."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # The none_val has _from_none flag
+        self.assertTrue(getattr(none_val, "_from_none", False))
+
+        # Copying creates a regular empty MagicDict
+        copied = none_val.copy()
+        self.assertTrue(getattr(copied, "_from_none"), False)
+        self.assertFalse(getattr(copied, "_from_missing", False))
+
+    def test_nested_none_values(self):
+        """Test multiple levels of None values."""
+        md = MagicDict({"a": None, "b": {"c": None, "d": {"e": None}}})
+
+        none1 = md.a
+        self.assertTrue(getattr(none1, "_from_none", False))
+
+        none2 = md.b.c
+        self.assertTrue(getattr(none2, "_from_none", False))
+
+        none3 = md.b.d.e
+        self.assertTrue(getattr(none3, "_from_none", False))
+
+    def test_getattr_vs_getitem_behavior(self):
+        """Test difference between attribute and item access."""
+        md = MagicDict({"a": None})
+
+        # Attribute access returns _from_none MagicDict
+        attr_result = md.a
+        self.assertTrue(getattr(attr_result, "_from_none", False))
+
+        # Item access returns None directly
+        item_result = md["a"]
+        self.assertIsNone(item_result)
+
+    def test_boolean_evaluation(self):
+        """Test that protected MagicDicts evaluate to False."""
+        md = MagicDict({"a": None})
+
+        missing = md.missing_key
+        none_val = md.a
+
+        # Both should be empty and evaluate to False
+        self.assertFalse(missing)
+        self.assertFalse(none_val)
+
+        # But they are instances of MagicDict
+        self.assertIsInstance(missing, MagicDict)
+        self.assertIsInstance(none_val, MagicDict)
+
+    def test_length_of_protected_magicdict(self):
+        """Test that protected MagicDicts have length 0."""
+        md = MagicDict({"a": None})
+
+        missing = md.missing_key
+        none_val = md.a
+
+        self.assertEqual(len(missing), 0)
+        self.assertEqual(len(none_val), 0)
+
+    def test_iteration_over_protected_magicdict(self):
+        """Test that protected MagicDicts are empty when iterated."""
+        md = MagicDict({"a": None})
+
+        missing = md.missing_key
+        none_val = md.a
+
+        self.assertEqual(list(missing), [])
+        self.assertEqual(list(none_val), [])
+        self.assertEqual(list(missing.keys()), [])
+        self.assertEqual(list(none_val.values()), [])
+
+
+class TestProtectionMechanisms(TestCase):
+    """Test that protection mechanisms work correctly."""
+
+    def test_all_mutating_operations_blocked_on_from_missing(self):
+        """Test comprehensive list of operations on _from_missing."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        operations = [
+            lambda: missing.__setitem__("x", 1),
+            lambda: missing.__delitem__("x"),
+            lambda: missing.update({"x": 1}),
+            lambda: missing.pop("x", None),
+            lambda: missing.popitem(),
+            lambda: missing.clear(),
+            lambda: missing.setdefault("x", 1),
+        ]
+
+        for op in operations:
+            with self.assertRaises(
+                TypeError, msg=f"Operation {op} should raise TypeError"
+            ):
+                op()
+
+    def test_all_mutating_operations_blocked_on_from_none(self):
+        """Test comprehensive list of operations on _from_none."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        operations = [
+            lambda: none_val.__setitem__("x", 1),
+            lambda: none_val.__delitem__("x"),
+            lambda: none_val.update({"x": 1}),
+            lambda: none_val.pop("x", None),
+            lambda: none_val.popitem(),
+            lambda: none_val.clear(),
+            lambda: none_val.setdefault("x", 1),
+        ]
+
+        for op in operations:
+            with self.assertRaises(
+                TypeError, msg=f"Operation {op} should raise TypeError"
+            ):
+                op()
+
+    def test_read_operations_work_on_protected(self):
+        """Test that read operations work fine on protected MagicDicts."""
+        md = MagicDict({"a": None})
+        missing = md.missing_key
+        none_val = md.a
+
+        # Read operations should work
+        self.assertEqual(len(missing), 0)
+        self.assertEqual(len(none_val), 0)
+        self.assertEqual(list(missing.keys()), [])
+        self.assertEqual(list(none_val.values()), [])
+        self.assertEqual(missing.get("x", "default"), "default")
+        self.assertEqual(none_val.get("x", "default"), "default")
+        self.assertNotIn("x", missing)
+        self.assertNotIn("x", none_val)
+
+
+class TestCopyFlagPreservation(TestCase):
+    """Test that copy() preserves special flags."""
+
+    def test_copy_preserves_from_none(self):
+        """Test that copy() preserves _from_none flag."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # Verify original has flag
+        self.assertTrue(getattr(none_val, "_from_none", False))
+
+        # Copy and verify flag is preserved
+        copied = none_val.copy()
+        self.assertTrue(getattr(copied, "_from_none", False))
+        self.assertFalse(getattr(copied, "_from_missing", False))
+
+    def test_copy_preserves_from_missing(self):
+        """Test that copy() preserves _from_missing flag."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        # Verify original has flag
+        self.assertTrue(getattr(missing, "_from_missing", False))
+
+        # Copy and verify flag is preserved
+        copied = missing.copy()
+        self.assertTrue(getattr(copied, "_from_missing", False))
+        self.assertFalse(getattr(copied, "_from_none", False))
+
+    def test_copy_of_regular_magicdict(self):
+        """Test that copy() of regular MagicDict has no special flags."""
+        md = MagicDict({"a": 1, "b": 2})
+        copied = md.copy()
+
+        self.assertFalse(getattr(copied, "_from_none", False))
+        self.assertFalse(getattr(copied, "_from_missing", False))
+
+    def test_copied_protected_still_protected(self):
+        """Test that copied protected MagicDicts remain protected."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+        copied = none_val.copy()
+
+        # Should still raise TypeError on modification
+        with self.assertRaises(TypeError):
+            copied["x"] = 1
+
+    def test_shallow_copy_function(self):
+        """Test that copy.copy() also preserves flags."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+        # Use copy.copy()
+        copied = copy.copy(none_val)
+        self.assertTrue(getattr(copied, "_from_none", False))
+
+
+class TestDeepcopyFlagPreservation(TestCase):
+    """Test that deepcopy() preserves special flags."""
+
+    def test_deepcopy_preserves_from_none(self):
+        """Test that deepcopy() preserves _from_none flag."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # Deep copy and verify flag is preserved
+        deep_copied = deepcopy(none_val)
+        self.assertTrue(getattr(deep_copied, "_from_none", False))
+        self.assertFalse(getattr(deep_copied, "_from_missing", False))
+
+    def test_deepcopy_preserves_from_missing(self):
+        """Test that deepcopy() preserves _from_missing flag."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        # Deep copy and verify flag is preserved
+        deep_copied = deepcopy(missing)
+        self.assertTrue(getattr(deep_copied, "_from_missing", False))
+        self.assertFalse(getattr(deep_copied, "_from_none", False))
+
+    def test_deepcopy_of_regular_magicdict(self):
+        """Test that deepcopy() of regular MagicDict has no special flags."""
+        md = MagicDict({"a": 1, "b": {"c": 2}})
+        deep_copied = deepcopy(md)
+
+        self.assertFalse(getattr(deep_copied, "_from_none", False))
+        self.assertFalse(getattr(deep_copied, "_from_missing", False))
+
+    def test_deepcopy_with_nested_structure(self):
+        """Test deepcopy with nested MagicDicts preserves flags."""
+        md = MagicDict({"a": {"b": {"c": None}}})
+        none_val = md.a.b.c
+
+        deep_copied = deepcopy(none_val)
+        self.assertTrue(getattr(deep_copied, "_from_none", False))
+
+    def test_deepcopy_protected_still_protected(self):
+        """Test that deepcopied protected MagicDicts remain protected."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+        deep_copied = deepcopy(none_val)
+
+        # Should still raise TypeError on modification
+        with self.assertRaises(TypeError):
+            deep_copied["x"] = 1
+
+
+class TestPickleFlagPreservation(TestCase):
+    """Test that pickle/unpickle preserves special flags."""
+
+    def test_pickle_preserves_from_none(self):
+        """Test that pickle/unpickle preserves _from_none flag."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # Pickle and unpickle
+        pickled = pickle.dumps(none_val)
+        unpickled = pickle.loads(pickled)
+
+        self.assertTrue(getattr(unpickled, "_from_none", False))
+        self.assertFalse(getattr(unpickled, "_from_missing", False))
+
+    def test_pickle_preserves_from_missing(self):
+        """Test that pickle/unpickle preserves _from_missing flag."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        # Pickle and unpickle
+        pickled = pickle.dumps(missing)
+        unpickled = pickle.loads(pickled)
+
+        self.assertTrue(getattr(unpickled, "_from_missing", False))
+        self.assertFalse(getattr(unpickled, "_from_none", False))
+
+    def test_pickle_regular_magicdict(self):
+        """Test that pickle/unpickle of regular MagicDict has no special flags."""
+        md = MagicDict({"a": 1, "b": 2})
+
+        pickled = pickle.dumps(md)
+        unpickled = pickle.loads(pickled)
+
+        self.assertFalse(getattr(unpickled, "_from_none", False))
+        self.assertFalse(getattr(unpickled, "_from_missing", False))
+        self.assertEqual(unpickled, md)
+
+    def test_pickle_with_data(self):
+        """Test pickle preserves both flags and data."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # Even though it's from None, it's empty
+        pickled = pickle.dumps(none_val)
+        unpickled = pickle.loads(pickled)
+
+        self.assertEqual(len(unpickled), 0)
+        self.assertTrue(getattr(unpickled, "_from_none", False))
+
+    def test_pickle_protected_still_protected(self):
+        """Test that unpickled protected MagicDicts remain protected."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        pickled = pickle.dumps(none_val)
+        unpickled = pickle.loads(pickled)
+
+        # Should still raise TypeError on modification
+        with self.assertRaises(TypeError):
+            unpickled["x"] = 1
+
+
+class TestReprWithFlags(TestCase):
+    """Test that __repr__ shows flags."""
+
+
+    def test_repr_regular_no_flags(self):
+        """Test that __repr__ doesn't show flags for regular MagicDict."""
+        md = MagicDict({"a": 1})
+
+        repr_str = repr(md)
+        self.assertNotIn("_from_none", repr_str)
+        self.assertNotIn("_from_missing", repr_str)
+
+
+class TestFlagPreservationEdgeCases(TestCase):
+    """Test edge cases for flag preservation."""
+
+    def test_multiple_copy_operations(self):
+        """Test that flags survive multiple copy operations."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        copy1 = none_val.copy()
+        copy2 = copy1.copy()
+        copy3 = copy2.copy()
+
+        self.assertTrue(getattr(copy3, "_from_none", False))
+
+    def test_copy_then_deepcopy(self):
+        """Test combining copy and deepcopy operations."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        copied = none_val.copy()
+        deep_copied = deepcopy(copied)
+
+        self.assertTrue(getattr(deep_copied, "_from_none", False))
+
+    def test_deepcopy_then_pickle(self):
+        """Test combining deepcopy and pickle operations."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        deep_copied = deepcopy(none_val)
+        pickled = pickle.dumps(deep_copied)
+        unpickled = pickle.loads(pickled)
+
+        self.assertTrue(getattr(unpickled, "_from_none", False))
+
+    def test_all_operations_combined(self):
+        """Test that flags survive all operations combined."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        # Chain all operations
+        copied = none_val.copy()
+        deep_copied = deepcopy(copied)
+        pickled = pickle.dumps(deep_copied)
+        unpickled = pickle.loads(pickled)
+        final_copy = unpickled.copy()
+
+        self.assertTrue(getattr(final_copy, "_from_none", False))
+
+        # Should still be protected
+        with self.assertRaises(TypeError):
+            final_copy["x"] = 1
+
+    def test_none_function_after_copy(self):
+        """Test that none() function works after copy operations."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        copied = none_val.copy()
+        result = none(copied)
+
+        self.assertIsNone(result)
+
+    def test_none_function_after_deepcopy(self):
+        """Test that none() function works after deepcopy."""
+        md = MagicDict({"a": 1})
+        missing = md.missing_key
+
+        deep_copied = deepcopy(missing)
+        result = none(deep_copied)
+
+        self.assertIsNone(result)
+
+    def test_none_function_after_pickle(self):
+        """Test that none() function works after pickle/unpickle."""
+        md = MagicDict({"a": None})
+        none_val = md.a
+
+        pickled = pickle.dumps(none_val)
+        unpickled = pickle.loads(pickled)
+        result = none(unpickled)
+
+        self.assertIsNone(result)
+
+
+class TestFlagPreservationWithNesting(TestCase):
+    """Test flag preservation with nested structures."""
+
+    def test_deepcopy_nested_protected_dicts(self):
+        """Test deepcopy with structure containing protected MagicDicts."""
+        md = MagicDict({"data": {"a": None, "b": 1}})
+
+        # Access None value
+        none_val = md.data.a
+
+        # Deep copy the whole structure
+        deep_copied = deepcopy(md)
+
+        # Access the same path in the copy
+        copied_none = deep_copied.data.a
+
+        # Should still be protected
+        self.assertTrue(getattr(copied_none, "_from_none", False))
+
+    def test_pickle_structure_with_protected(self):
+        """Test pickle with structure containing protected MagicDicts."""
+        md = MagicDict({"x": None, "y": {"z": None}})
+
+        pickled = pickle.dumps(md)
+        unpickled = pickle.loads(pickled)
+
+        # Access should still create protected MagicDicts
+        none_x = unpickled.x
+        none_z = unpickled.y.z
+
+        self.assertTrue(getattr(none_x, "_from_none", False))
+        self.assertTrue(getattr(none_z, "_from_none", False))

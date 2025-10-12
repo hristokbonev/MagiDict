@@ -96,6 +96,13 @@ class MagicDict(dict):
     def __getattr__(self, name):
         """Enables attribute-style access. Returns a safe, empty MagicDict
         for missing keys or keys with a value of None."""
+        # Check for special flag attributes first
+        if name in ("_from_none", "_from_missing"):
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                return False
+
         if super().__contains__(name):
             value = self[name]
             if value is None:
@@ -131,8 +138,15 @@ class MagicDict(dict):
             self[k] = v
 
     def copy(self):
-        """Return a shallow copy of the MagicDict."""
-        return MagicDict(super().copy())
+        """Return a shallow copy of the MagicDict, preserving special flags."""
+        new_copy = MagicDict(super().copy())
+        # Preserve the special flags
+        if getattr(self, "_from_none", False):
+            object.__setattr__(new_copy, "_from_none", True)
+        if getattr(self, "_from_missing", False):
+            object.__setattr__(new_copy, "_from_missing", True)
+
+        return new_copy
 
     def setdefault(self, key, default=None):
         """Overrides dict.setdefault to ensure the default value is hooked."""
@@ -165,8 +179,14 @@ class MagicDict(dict):
         """Support deep copy of MagicDict, handling circular references."""
         copied = MagicDict()
         memo[id(self)] = copied
+        # Preserve special flags using object.__setattr__ to bypass __setattr__
+        if object.__getattribute__(self, "__dict__").get("_from_none", False):
+            object.__setattr__(copied, "_from_none", True)
+        if object.__getattribute__(self, "__dict__").get("_from_missing", False):
+            object.__setattr__(copied, "_from_missing", True)
+        # Deep copy the contents, bypassing protection if needed
         for k, v in self.items():
-            copied[k] = deepcopy(v, memo)
+            dict.__setitem__(copied, k, deepcopy(v, memo))
         return copied
 
     def __repr__(self):
@@ -194,18 +214,32 @@ class MagicDict(dict):
 
     def __getstate__(self):
         """
-        Return the state to be pickled. It's just the dictionary's contents.
-        pickle will handle the rest, including circular references.
+        Return the state to be pickled. Include both the dict contents and special flags.
         """
-        return dict(self)
+        state = {
+            "data": dict(self),
+            "_from_none": getattr(self, "_from_none", False),
+            "_from_missing": getattr(self, "_from_missing", False),
+        }
+
+        return state
+
+    def __reduce_ex__(self, protocol):
+        """Custom pickling support to preserve flags across pickle/unpickle."""
+
+        return (self.__class__, (), self.__getstate__(), None, None)
 
     def __setstate__(self, state):
         """
-        Restore the state from the unpickled state. The `update` method
-        is perfect for this as it already calls the `_hook` method to
-        recursively convert nested dicts back to MagicDicts.
+        Restore the state from the unpickled state, preserving special flags.
         """
-        self.update(state)
+        if state.get("_from_none", False):
+            object.__setattr__(self, "_from_none", True)
+        if state.get("_from_missing", False):
+            object.__setattr__(self, "_from_missing", True)
+        # Use dict.update to bypass protection check during unpickling
+        for k, v in state.get("data", {}).items():
+            dict.__setitem__(self, k, self._hook(v))
 
     def mget(self, key, default=_MISSING):
         """
