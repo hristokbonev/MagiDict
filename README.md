@@ -7,7 +7,7 @@ If you answered "yes" to any of these questions, then MagicDict is the library f
 
 MagicDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
 
-Stop chaining `get` calls and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
+Stop chaining get calls and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
 
 ## Table of Contents
 
