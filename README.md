@@ -56,7 +56,7 @@ Use dot-separated strings for deep access, including list indices:
 md = MagicDict({
     'users': [
         {'name': 'Alice', 'id': 1},
-        {'name': 'Bob', 'id': 2}
+        {'name': 'Keanu', 'id': 2}
     ]
 })
 
@@ -354,10 +354,10 @@ Setting or updating keys using dot notation is not supported. Use bracket notati
 ```python
 md = MagicDict({'user': {'name': 'Alice'}})
 
-md.user.name = 'Bob'  # AttributeError
+md.user.name = 'Keanu'  # AttributeError
 md.user.age = 30      # AttributeError
 # Use bracket notation instead
-md['user']['name'] = 'Bob'
+md['user']['name'] = 'Keanu'
 md['user']['age'] = 30
 ```
 
@@ -381,10 +381,10 @@ restored.data.nested  # 'value'
 
 md1 = MagicDict({'user': {'name': 'Alice'}})
 md2 = deepcopy(md1)
-md2.user.name = 'Bob'
+md2.user.name = 'Keanu'
 
 md1.user.name  # 'Alice' (unchanged)
-md2.user.name  # 'Bob'
+md2.user.name  # 'Keanu'
 ```
 
 ### In-Place Updates with `|=` Operator
