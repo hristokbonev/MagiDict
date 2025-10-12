@@ -1,7 +1,13 @@
 [magicdict_docs.md](https://github.com/user-attachments/files/22863846/magicdict_docs.md)
 # MagicDict
 
-A powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
+Do you often find yourself chaining `get` calls like there's no tomorrow, and then pray to the gods of safety that you didn't miss a {} in one of them? Has your partner already left you because you call them "None" one too many times? Do you kids get annoyed with you because when they ask you for something, you always reply "I'll try, except KeyError as e"? And do your friends avoid you because when you hang out with them, you keep going to the bathroom to check your logs for any KeyErrors named 'real_friends'? How often do you seek imaginary guidance from Guido van Rossum, begging him to teach you the mystical ways of safely navigating nested dictionaries? When you go out in public, do you constantly have the feeling that Keanu Reeves is judging you for not being able to safely access nested dictionary keys? And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took that course on French for beginners and moved to southern France, where you could open a small cafe and live a simple life away from all the pain of deeply nested dictionaries?
+
+If you answered "yes" to any of these questions, then MagicDict is the library for you!
+
+MagicDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with automatic conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
+
+Stop chaining `get` calls and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work` !
 
 ## Table of Contents
 
