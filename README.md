@@ -7,7 +7,7 @@ Do you kids get annoyed with you because you've called them "None" one too many 
 And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "real_friends"?<br>
 How often do you seek imaginary guidance from Guido, begging him to teach you the mystical ways of safely navigating nested Python dictionaries?<br>
 When you go out in public, do you constantly have the feeling that Keanu Reeves is judging you from behind the corner for not being able to safely access nested dictionary keys?<br>
-And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took a that course in JavaScript that your friend gave you a voucher for, before they moved to a different country and you lost contact with them, so you could finally use optional chaining and nullish coalescing operators to safely access nested properties without all the drama?
+And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took that course in JavaScript that your friend gave you a voucher for, before they moved to a different country and you lost contact with them, so you could finally use optional chaining and nullish coalescing operators to safely access nested properties without all the drama?
 
 If you answered "yes" to any of these questions, you're not alone!
 But fear not, because finally there's a solution that doesn't involve learning a whole new programming language or changing your religion to JavaScript! It's called ✨MagicDict✨ and it's here to save your sanity!
