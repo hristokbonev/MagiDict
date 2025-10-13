@@ -1,3 +1,5 @@
+
+
 # MagiDict
 
 Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>
