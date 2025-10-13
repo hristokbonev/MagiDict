@@ -1,4 +1,3 @@
-[magidict_docs.md](https://github.com/user-attachments/files/22863846/magidict_docs.md)
 # MagiDict
 
 Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>
@@ -518,3 +517,7 @@ md['value']  # None
 
 ## License
 MagiDict is licensed under the MIT License. See the LICENSE file for details.
+
+## Links
+For documentation and source code, visit the project on GitHub:
+[https://github.com/hristokbonev/MagiDict](https://github.com/hristokbonev/MagiDict)
