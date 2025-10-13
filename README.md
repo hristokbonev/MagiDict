@@ -515,3 +515,6 @@ md.value  # MagiDict({})
 # Use bracket access to get actual None
 md['value']  # None
 ```
+
+## License
+MagiDict is licensed under the MIT License. See the LICENSE file for details.
