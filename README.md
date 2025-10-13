@@ -1,7 +1,7 @@
 # MagiDict
 
 Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>
-Has your partner left you because whenever they ask you to do something, you always reply "I'll try, except KeyError as e"?<br>
+Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except KeyError as e"?<br>
 Do your kids get annoyed with you because you've called them "None" one too many times.<br>
 And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "real_friends"?<br>
 How often do you seek imaginary guidance from Guido, begging him to teach you the mystical ways of safely navigating nested Python dictionaries?<br>
@@ -296,7 +296,7 @@ Converts an empty `MagiDict` that was created from a `None` or missing key into 
 
 **Returns:**
 
-- `None` if `obj` is an empty `MagiDict` created from `None` or missing keyFtest
+- `None` if `obj` is an empty `MagiDict` created from `None` or missing key
 - `obj` otherwise
 
 ## Important Caveats
