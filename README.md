@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/hristokbonev/MagiDict/refs/heads/main/docs/assets/MagiDictLogo.png?token=GHSAT0AAAAAADJ26KROV5GM7ZMIQSLMQ6V62HNPBAA" alt="MagiDict Logo" width="200">
+  <img src="http://raw.githubusercontent.com/hristokbonev/MagiDict/refs/heads/main/docs/assets/MagiDictLogo.png" alt="MagiDict Logo" width="200">
 </p>
 
 <h1 align="center">✨ MagiDict ✨</h1>
