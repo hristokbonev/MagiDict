@@ -6,14 +6,14 @@ from typing import Any, Mapping, Sequence
 _MISSING = object()
 
 
-class MagicDict(dict):
+class MagiDict(dict):
     """A dictionary that supports attribute-style access and recursive conversion
-    of nested dictionaries into MagicDicts. It also supports safe access to missing
-    keys and keys with None values by returning empty MagicDicts, allowing for
+    of nested dictionaries into MagiDicts. It also supports safe access to missing
+    keys and keys with None values by returning empty MagiDicts, allowing for
     safe chaining of attribute accesses."""
 
     def __init__(self, *args, **kwargs):
-        """Initialize the MagicDict, recursively converting nested dicts.
+        """Initialize the MagiDict, recursively converting nested dicts.
         Supports initialization with a single dict, mapping, or standard dict args/kwargs.
         """
         super().__init__()
@@ -28,18 +28,18 @@ class MagicDict(dict):
 
     @classmethod
     def _hook(cls, item):
-        """Recursively converts dictionaries in collections to MagicDicts."""
+        """Recursively converts dictionaries in collections to MagiDicts."""
         return cls._hook_with_memo(item, {})
 
     @classmethod
     def _hook_with_memo(cls, item, memo):
-        """Recursively converts dictionaries in collections to MagicDicts.
+        """Recursively converts dictionaries in collections to MagiDicts.
         Uses a memoization dict to handle circular references."""
         item_id = id(item)
         if item_id in memo:
             return memo[item_id]
 
-        if isinstance(item, MagicDict):
+        if isinstance(item, MagiDict):
             memo[item_id] = item
             return item
 
@@ -94,7 +94,7 @@ class MagicDict(dict):
             raise
 
     def __getattr__(self, name):
-        """Enables attribute-style access. Returns a safe, empty MagicDict
+        """Enables attribute-style access. Returns a safe, empty MagiDict
         for missing keys or keys with a value of None."""
         # Check for special flag attributes first
         if name in ("_from_none", "_from_missing"):
@@ -106,40 +106,40 @@ class MagicDict(dict):
         if super().__contains__(name):
             value = self[name]
             if value is None:
-                md = MagicDict()
+                md = MagiDict()
                 object.__setattr__(md, "_from_none", True)
                 return md
-            if isinstance(value, dict) and not isinstance(value, MagicDict):
-                value = MagicDict(value)
+            if isinstance(value, dict) and not isinstance(value, MagiDict):
+                value = MagiDict(value)
                 self[name] = value
             return value
         try:
             return super().__getattribute__(name)
         except AttributeError:
-            md = MagicDict()
+            md = MagiDict()
             object.__setattr__(md, "_from_missing", True)
             return md
 
     def __setitem__(self, key, value):
-        """Hook values to convert nested dicts into MagicDicts.
-        Prevent setting values on MagicDicts created from missing or None keys."""
+        """Hook values to convert nested dicts into MagiDicts.
+        Prevent setting values on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         super().__setitem__(key, self._hook(value))
 
     def __delitem__(self, key):
-        """Prevent deleting items on MagicDicts created from missing or None keys."""
+        """Prevent deleting items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         super().__delitem__(key)
 
     def update(self, *args, **kwargs):
-        """Recursively convert nested dicts into MagicDicts on update."""
+        """Recursively convert nested dicts into MagiDicts on update."""
         self._raise_if_protected()
         for k, v in dict(*args, **kwargs).items():
             self[k] = v
 
     def copy(self):
-        """Return a shallow copy of the MagicDict, preserving special flags."""
-        new_copy = MagicDict(super().copy())
+        """Return a shallow copy of the MagiDict, preserving special flags."""
+        new_copy = MagiDict(super().copy())
         # Preserve the special flags
         if getattr(self, "_from_none", False):
             object.__setattr__(new_copy, "_from_none", True)
@@ -176,8 +176,8 @@ class MagicDict(dict):
         return ordered
 
     def __deepcopy__(self, memo):
-        """Support deep copy of MagicDict, handling circular references."""
-        copied = MagicDict()
+        """Support deep copy of MagiDict, handling circular references."""
+        copied = MagiDict()
         memo[id(self)] = copied
         # Preserve special flags using object.__setattr__ to bypass __setattr__
         if object.__getattribute__(self, "__dict__").get("_from_none", False):
@@ -198,17 +198,17 @@ class MagicDict(dict):
         return self
 
     def pop(self, key, *args):
-        """Prevent popping items on MagicDicts created from missing or None keys."""
+        """Prevent popping items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         return super().pop(key, *args)
 
     def popitem(self):
-        """Prevent popping items on MagicDicts created from missing or None keys."""
+        """Prevent popping items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         return super().popitem()
 
     def clear(self):
-        """Prevent clearing items on MagicDicts created from missing or None keys."""
+        """Prevent clearing items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         super().clear()
 
@@ -244,24 +244,24 @@ class MagicDict(dict):
     def mget(self, key, default=_MISSING):
         """
         Safe get method that mimics attribute-style access.
-        If the key doesn't exist, returns an empty MagicDict instead of raising KeyError.
-        If the key exists but its value is None, returns an empty MagicDict for safe chaining.
+        If the key doesn't exist, returns an empty MagiDict instead of raising KeyError.
+        If the key exists but its value is None, returns an empty MagiDict for safe chaining.
         """
         if default is _MISSING:
-            md = MagicDict()
+            md = MagiDict()
             object.__setattr__(md, "_from_missing", True)
             default = md
         if super().__contains__(key):
             value = self[key]
             if value is None and default is not None:
-                md = MagicDict()
+                md = MagiDict()
                 object.__setattr__(md, "_from_none", True)
                 return md
             return value
         return default
 
     def _raise_if_protected(self):
-        """Raises TypeError if this MagicDict was created from a None or missing key,
+        """Raises TypeError if this MagiDict was created from a None or missing key,
         preventing modifications to. It can however be bypassed with dict methods."""
         if getattr(self, "_from_none", False) or getattr(self, "_from_missing", False):
             raise TypeError("Cannot modify NoneType or missing keys.")
@@ -274,7 +274,7 @@ class MagicDict(dict):
 
     def disenchant(self):
         """
-        Convert MagicDict and all nested MagicDicts back into standard dicts,
+        Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully.
         """
         memo = {}
@@ -284,7 +284,7 @@ class MagicDict(dict):
             if item_id in memo:
                 return memo[item_id]
 
-            if isinstance(item, MagicDict):
+            if isinstance(item, MagiDict):
                 new_dict = {}
                 memo[item_id] = new_dict
                 for k, v in item.items():
@@ -330,24 +330,24 @@ class MagicDict(dict):
         return _disenchant_recursive(self)
 
 
-def magic_loads(s: str, **kwargs) -> MagicDict:
-    """Deserialize a JSON string into a MagicDict instead of a dict."""
-    return json.loads(s, object_hook=MagicDict)
+def magi_loads(s: str, **kwargs) -> MagiDict:
+    """Deserialize a JSON string into a MagiDict instead of a dict."""
+    return json.loads(s, object_hook=MagiDict)
 
 
-def enchant(d: dict) -> MagicDict:
-    """Convert a standard dictionary into a MagicDict."""
-    if isinstance(d, MagicDict):
+def enchant(d: dict) -> MagiDict:
+    """Convert a standard dictionary into a MagiDict."""
+    if isinstance(d, MagiDict):
         return d
     if not isinstance(d, dict):
         raise TypeError(f"Expected dict, got {type(d).__name__}")
-    return MagicDict(d)
+    return MagiDict(d)
 
 
 def none(obj: Any):
-    """Convert an empty MagicDict that was created from a None or missing key into None."""
+    """Convert an empty MagiDict that was created from a None or missing key into None."""
     if (
-        isinstance(obj, MagicDict)
+        isinstance(obj, MagiDict)
         and len(obj) == 0
         and (getattr(obj, "_from_none", False) or getattr(obj, "_from_missing", False))
     ):

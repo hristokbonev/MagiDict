@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magidict"
+version = "0.1.0"
+description = "A recursive dictionary with safe attribute access and automatic conversion."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "Hristo", email = "chkbonev@gmail.com"}
+]
+keywords = [
+  "dictionary",
+  "nested dict",
+  "magic dict",
+  "safe access",
+  "dot notation",
+  "attribute access",
+  "dotdict",
+  "recursive dict",
+  "json",
+  "data structure",
+  "python utility",
+  "mapping",
+  "dynamic object",
+  "flexible dict",
+  "auto convert",
+  "dict wrapper",
+  "smart dict",
+  "object-like dict",
+  "data helper",
+  "config parser",
+  "config manager",
+  "attribute dict",
+  "namespace dict",
+  "chainable access",
+  "python tools"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/magicdict"
+Issues = "https://github.com/yourusername/magicdict/issues"
