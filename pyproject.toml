@@ -41,6 +41,7 @@ keywords = [
   "chainable access",
   "python tools"
 ]
+packages = ["magidict"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
