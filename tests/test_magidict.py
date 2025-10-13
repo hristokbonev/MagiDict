@@ -10,7 +10,7 @@ import pickle
 from types import MappingProxyType
 import json
 import weakref
-from magidict.core import MagiDict, enchant, magic_loads, none
+from magidict.core import MagiDict, enchant, magi_loads, none
 
 
 md = MagiDict(
@@ -23,7 +23,7 @@ md = MagiDict(
 )
 
 
-class TestMagicDict(TestCase):
+class TestMagiDict(TestCase):
     """Unit tests for the MagiDict class."""
 
     def setUp(self):
@@ -150,14 +150,14 @@ class TestMagicDict(TestCase):
         self.assertIsInstance(non_existent, MagiDict)
 
     def test_chained_attribute_access_non_existent(self):
-        """Accessing multiple non-existent attributes should return empty MagicDicts."""
+        """Accessing multiple non-existent attributes should return empty MagiDicts."""
         deeply_non_existent = self.md.a.b.c.d
         self.assertIsInstance(deeply_non_existent, MagiDict)
         self.assertEqual(deeply_non_existent, MagiDict())
         self.assertNotIn("a", self.md)
 
     def test_recursive_conversion_on_init(self):
-        """Test that nested dicts/lists/tuples are converted to MagicDicts recursively."""
+        """Test that nested dicts/lists/tuples are converted to MagiDicts recursively."""
         self.assertIsInstance(self.md.user, MagiDict)
         self.assertIsInstance(self.md.permissions[2], MagiDict)
         self.assertIsInstance(self.md.metadata[0], MagiDict)
@@ -227,7 +227,7 @@ class TestMagicDict(TestCase):
         self.assertEqual(d.pop("nonexistent", "default"), "default")
 
     def test_copy_preserves_type(self):
-        """Test that copy() returns a MagiDict and nested dicts are also MagicDicts."""
+        """Test that copy() returns a MagiDict and nested dicts are also MagiDicts."""
         d = MagiDict(a=1, b={"c": 2})
         d_copy = d.copy()
         self.assertIsInstance(d_copy, MagiDict)
@@ -440,15 +440,15 @@ class TestMagicDict(TestCase):
         # numeric key access via mget
         self.assertEqual(md.mget(1), "one_int")
 
-    def test_magic_loads_and_enchant_and_disenchant(self):
-        """Test magic_loads, enchant, and disenchant functions."""
+    def test_magi_loads_and_enchant_and_disenchant(self):
+        """Test magi_loads, enchant, and disenchant functions."""
         s = json.dumps({"x": {"y": 5}, "arr": [{"z": 6}]})
-        loaded = magic_loads(s)
+        loaded = magi_loads(s)
         self.assertIsInstance(loaded, MagiDict)
         self.assertIsInstance(loaded.x, MagiDict)
         self.assertEqual(loaded.x.y, 5)
 
-        # enchant should leave MagicDicts alone and convert dicts
+        # enchant should leave MagiDicts alone and convert dicts
         normal = {"a": 1}
         enchanted = enchant(normal)
         self.assertIsInstance(enchanted, MagiDict)
@@ -514,7 +514,7 @@ class TestMagicDict(TestCase):
         self.assertEqual(md.b.c[1].d, 2)
         self.assertEqual(md_deepcopy.b.c[1].d, 99)
 
-    def test_access_on_none_value_returns_magic_none(self):
+    def test_access_on_none_value_returns_magi_dict(self):
         """Accessing an attribute on a None value should return an empty MagiDict."""
         md = MagiDict({"config": None})
         self.assertEqual(md.config.host, MagiDict())
@@ -609,13 +609,13 @@ class TestMagicDict(TestCase):
             with self.assertRaises(SyntaxError):
                 eval(f"md.{k}")
 
-    def test_nested_none_access_returns_magic_none(self):
+    def test_nested_none_access_returns_magi_dict(self):
         """Accessing attributes on nested None values should return SafeNone."""
         md = MagiDict({"a": {"b": None}})
         self.assertEqual(md.a.b.c, MagiDict())
 
     def test_dict_in_nested_tuples_conversion_enchant(self):
-        """Test that dicts inside nested tuples are converted to MagicDicts."""
+        """Test that dicts inside nested tuples are converted to MagiDicts."""
         md = MagiDict({"a": (({"b": 1},),)})
         self.assertIsInstance(md.a[0][0], MagiDict)
         self.assertEqual(md.a[0][0].b, 1)
@@ -702,7 +702,7 @@ class TestMagicDict(TestCase):
         self.assertEqual(md.mixed[3][0].b, 2)
 
     def test_nested_empty_structures_in_collections(self):
-        """Test that empty dicts inside lists and tuples are converted to MagicDicts."""
+        """Test that empty dicts inside lists and tuples are converted to MagiDicts."""
         md = MagiDict({"lst": [{}], "tpl": ({},)})
         self.assertIsInstance(md.lst[0], MagiDict)
         self.assertIsInstance(md.tpl[0], MagiDict)
@@ -753,7 +753,7 @@ class TestMagicDict(TestCase):
         self.assertEqual(md.s, {1, 2})
         self.assertEqual(md.fs, frozenset([3, 4]))
 
-    def test_chained_access_on_non_dict_returns_empty_magic_none(self):
+    def test_chained_access_on_non_dict_returns_empty_magi_dict(self):
         """Accessing attributes on a non-dict value should raise AttributeError."""
         md = MagiDict({"a": 42})
         # self.assertEqual(md.a.b.c, None)
@@ -945,7 +945,7 @@ class TestMagicDict(TestCase):
         self.assertNotIn("True", md)
 
     def test_dict_inside_list_is_converted(self):
-        """Test that dicts inside lists are converted to MagicDicts."""
+        """Test that dicts inside lists are converted to MagiDicts."""
         d = {"container": [{"a": {"b": 2}}]}
         md = MagiDict(d)
         self.assertIsInstance(md.container[0], MagiDict)
@@ -1003,12 +1003,12 @@ class TestMagicDict(TestCase):
     def test_subclass_preserves_safe_dict_behavior(self):
         """Test that subclasses of MagiDict retain the automatic conversion behavior."""
 
-        class SubMagicDict(MagiDict):
+        class SubMagiDict(MagiDict):
             """A subclass of MagiDict to test inheritance of behavior."""
 
             pass
 
-        smd = SubMagicDict({"a": {"b": 1}})
+        smd = SubMagiDict({"a": {"b": 1}})
         self.assertIsInstance(smd.a, MagiDict)
         self.assertEqual(smd.a.b, 1)
 
@@ -1063,15 +1063,15 @@ class TestMagicDict(TestCase):
         md = MagiDict({"a": 1, "b": 2})
 
         dict_dir = set(dir(dict))
-        magic_dir = set(dir(md))
+        magi_dir = set(dir(md))
 
-        missing = dict_dir - magic_dir
+        missing = dict_dir - magi_dir
         self.assertFalse(
             missing, f"MagiDict.__dir__ is missing dict attributes: {missing}"
         )
 
-        self.assertIn("a", magic_dir)
-        self.assertIn("b", magic_dir)
+        self.assertIn("a", magi_dir)
+        self.assertIn("b", magi_dir)
 
     def test_json_serialization_deserialization(self):
         """Test JSON serialization and deserialization with MagiDict."""
@@ -1084,11 +1084,11 @@ class TestMagicDict(TestCase):
         self.assertNotIsInstance(loaded_plain, MagiDict)
         self.assertEqual(loaded_plain, {"a": 1, "b": {"c": 2}, "d": [1, 2, 3]})
 
-        loaded_magic = json.loads(dumped, object_hook=MagiDict)
-        self.assertIsInstance(loaded_magic, MagiDict)
-        self.assertIsInstance(loaded_magic.b, MagiDict)
-        self.assertEqual(loaded_magic.b.c, 2)
-        self.assertEqual(loaded_magic.d, [1, 2, 3])
+        loaded_magi = json.loads(dumped, object_hook=MagiDict)
+        self.assertIsInstance(loaded_magi, MagiDict)
+        self.assertIsInstance(loaded_magi.b, MagiDict)
+        self.assertEqual(loaded_magi.b.c, 2)
+        self.assertEqual(loaded_magi.d, [1, 2, 3])
 
     def test_key_and_attribute_access_are_consistent(self):
         """Test that key access and attribute access yield consistent results."""
@@ -1171,11 +1171,11 @@ class TestMagicDict(TestCase):
         self.assertIsInstance(md.mget("missing"), MagiDict)
 
     def test_safe_dict_loads_returns_enchant(self):
-        """Test that magic_loads returns a MagiDict when given a JSON string."""
+        """Test that magi_loads returns a MagiDict when given a JSON string."""
         original = MagiDict({"a": {"b": {"c": 42}}, "d": [1, 2]})
         dumped = json.dumps(original)
 
-        loaded = magic_loads(dumped)
+        loaded = magi_loads(dumped)
 
         self.assertIsInstance(loaded, MagiDict)
         self.assertIsInstance(loaded.a, MagiDict)
@@ -1233,7 +1233,7 @@ class TestMagicDict(TestCase):
         self.assertEqual(md.mget("items").missing_key, MagiDict())
 
     def test_init_with_nested_iterable(self):
-        """Test that nested dicts inside lists and tuples are converted to MagicDicts."""
+        """Test that nested dicts inside lists and tuples are converted to MagiDicts."""
         data = [("user", {"name": "test"}), ("permissions", [{"scope": "read"}])]
         md = MagiDict(data)
         self.assertIsInstance(md.user, MagiDict)
@@ -1272,7 +1272,7 @@ class TestSomeReturns(TestCase):
         json_str = json.dumps(data)
 
         # safedict_loads: use JSON string
-        sd_loaded = magic_loads(json_str)
+        sd_loaded = magi_loads(json_str)
         self.assertIsInstance(sd_loaded, MagiDict)
         self.assertEqual(sd_loaded.name, "Alice")
 
@@ -1299,7 +1299,7 @@ class TestSomeReturns(TestCase):
         self.assertIn("y", attrs)
 
 
-class TestMagicDictBooleans(TestCase):
+class TestMagiDictBooleans(TestCase):
     """Test handling of boolean values in MagiDict."""
 
     def setUp(self):
@@ -1362,7 +1362,7 @@ class TestMagicDictBooleans(TestCase):
     def test_json_deserialization_of_null(self):
         """Test that safedict_loads converts JSON null to _SafeNone."""
         json_str = '{"a": null, "b": {"c": null}}'
-        md = magic_loads(json_str)
+        md = magi_loads(json_str)
         self.assertIsInstance(md.a, MagiDict)
         self.assertFalse(md.a)
         self.assertIsInstance(md.b.c, MagiDict)
@@ -1551,7 +1551,7 @@ class TestMissingCases(TestCase):
         self.assertTrue(getattr(result, "_from_none", False))
         self.assertEqual(result, {})
 
-    def test_truthiness_of_magicdict_instances(self):
+    def test_truthiness_of_magidict_instances(self):
         """
         Verify the boolean value of MagiDict in different states.
         """
@@ -1590,7 +1590,7 @@ class TestMissingCases(TestCase):
         self.assertIs(type(inner_dict), dict)
 
 
-class TestMagicDictAdditionalCases(TestCase):
+class TestMagiDictAdditionalCases(TestCase):
     """Additional edge case tests for MagiDict"""
 
     def test_deeply_nested_mixed_structures(self):
@@ -1603,7 +1603,7 @@ class TestMagicDictAdditionalCases(TestCase):
         self.assertIsInstance(md.level1[0].level2[0].level3[0], MagiDict)
 
     def test_setitem_on_from_none_nested_access(self):
-        """Test that assignment fails even on deeply nested None-derived MagicDicts"""
+        """Test that assignment fails even on deeply nested None-derived MagiDicts"""
         md = MagiDict({"a": None})
         temp = md.a.b.c
         with self.assertRaises(TypeError):
@@ -1611,7 +1611,7 @@ class TestMagicDictAdditionalCases(TestCase):
         self.assertTrue(getattr(temp, "_from_missing", False))
 
     def test_setitem_on_from_missing_nested_access(self):
-        """Test that assignment fails on deeply nested missing-key MagicDicts"""
+        """Test that assignment fails on deeply nested missing-key MagiDicts"""
         md = MagiDict({})
         temp = md.x.y.z
         with self.assertRaises(TypeError):
@@ -1723,7 +1723,7 @@ class TestMagicDictAdditionalCases(TestCase):
         self.assertFalse(md.false)
         self.assertEqual(md.empty_string, "")
 
-    def test_len_on_from_missing_magicdict(self):
+    def test_len_on_from_missing_magidict(self):
         """Test len() on MagiDict created from missing key"""
         md = MagiDict({})
         temp = md.missing
@@ -1897,9 +1897,9 @@ class TestMagicDictAdditionalCases(TestCase):
         self.assertEqual(len(md.a.b.c), 0)
 
     def test_json_loads_with_none(self):
-        """Test magic_loads with JSON null values"""
+        """Test magi_loads with JSON null values"""
         json_str = '{"user": {"name": "Alice", "email": null}}'
-        md = magic_loads(json_str)
+        md = magi_loads(json_str)
         self.assertIsNone(md["user"]["email"])
         self.assertEqual(md.user.email, MagiDict())
 
@@ -2181,7 +2181,7 @@ class TestEnchantDisenchat(TestCase):
         self.assertIsInstance(enchanted.settings[0], MagiDict)
         self.assertEqual(enchanted.user.profile.email, "test@example.com")
 
-    def test_enchant_on_existing_magicdict(self):
+    def test_enchant_on_existing_magidict(self):
         """Verify that passing a MagiDict to enchant() returns it unchanged."""
         result = enchant(self.magi_dict)
         self.assertIs(result, self.magi_dict)
@@ -2197,7 +2197,7 @@ class TestEnchantDisenchat(TestCase):
 
     # --- Tests for disenchant() ---
 
-    def test_disenchant_converts_magic_dict(self):
+    def test_disenchant_converts_magi_dict(self):
         """Verify that disenchant() converts a MagiDict back to a standard dict."""
         disenchanted = self.magi_dict.disenchant()
         self.assertIs(type(disenchanted), dict)
@@ -2205,7 +2205,7 @@ class TestEnchantDisenchat(TestCase):
         self.assertEqual(disenchanted["status"], "ok")
 
     def test_disenchant_is_recursive(self):
-        """Verify that disenchant() recursively converts nested MagicDicts."""
+        """Verify that disenchant() recursively converts nested MagiDicts."""
         disenchanted = self.magi_dict.disenchant()
         self.assertIs(type(disenchanted["user"]), dict)
         self.assertIs(type(disenchanted["user"]["profile"]), dict)
@@ -2259,7 +2259,7 @@ class TestEnchantDisenchat(TestCase):
         self.assertEqual(result, self.standard_dict)
 
 
-class TestMagicDictBasicFunctionality(TestCase):
+class TestMagiDictBasicFunctionality(TestCase):
     """Test basic MagiDict features"""
 
     def test_attribute_access(self):
@@ -2311,7 +2311,7 @@ class TestMagicDictBasicFunctionality(TestCase):
         self.assertEqual(len(result), 0)
 
 
-class TestMagicDictRecursiveConversion(TestCase):
+class TestMagiDictRecursiveConversion(TestCase):
     """Test recursive conversion of nested structures"""
 
     def test_nested_dict_conversion(self):
@@ -2340,7 +2340,7 @@ class TestMagicDictRecursiveConversion(TestCase):
         self.assertIsInstance(md.point.x, MagiDict)
 
 
-class TestMagicDictCircularReferences(TestCase):
+class TestMagiDictCircularReferences(TestCase):
     """Test handling of circular references"""
 
     def test_disenchant_circular_reference(self):
@@ -2371,7 +2371,7 @@ class TestMagicDictCircularReferences(TestCase):
         self.assertIs(result["items"][1], result["items"])
 
 
-class TestMagicDictInputMutation(TestCase):
+class TestMagiDictInputMutation(TestCase):
     """Test for input data mutation side effects"""
 
     def test_list_mutation_side_effect(self):
@@ -2401,7 +2401,7 @@ class TestMagicDictInputMutation(TestCase):
         self.assertNotIsInstance(original_tuple[0], MagiDict)
 
 
-class TestMagicDictDotNotationEdgeCases(TestCase):
+class TestMagiDictDotNotationEdgeCases(TestCase):
     """Test dot notation with edge cases"""
 
     def test_dot_notation_with_list_index(self):
@@ -2424,7 +2424,7 @@ class TestMagicDictDotNotationEdgeCases(TestCase):
             _ = md["user.email.address"]
 
 
-class TestMagicDictThreadSafety(TestCase):
+class TestMagiDictThreadSafety(TestCase):
     """Test thread safety (or lack thereof)"""
 
     def test_concurrent_reads(self):
@@ -2477,10 +2477,10 @@ class TestMagicDictThreadSafety(TestCase):
             print(f"Warning: {len(results['errors'])} thread safety issues detected")
 
 
-class TestMagicDictProtectionBypass(TestCase):
-    """Test protection mechanisms on temporary MagicDicts"""
+class TestMagiDictProtectionBypass(TestCase):
+    """Test protection mechanisms on temporary MagiDicts"""
 
-    def test_cannot_assign_to_missing_key_magicdict(self):
+    def test_cannot_assign_to_missing_key_magidict(self):
         """Assignment to missing key MagiDict raises TypeError"""
         md = MagiDict({"user": {"name": "Alice"}})
         temp = md.user.email
@@ -2488,7 +2488,7 @@ class TestMagicDictProtectionBypass(TestCase):
         with self.assertRaises(TypeError):
             temp["key"] = "value"
 
-    def test_cannot_assign_to_none_value_magicdict(self):
+    def test_cannot_assign_to_none_value_magidict(self):
         """Assignment to None value MagiDict raises TypeError"""
         md = MagiDict({"user": {"nickname": None}})
         temp = md.user.nickname
@@ -2522,7 +2522,7 @@ class TestMagicDictProtectionBypass(TestCase):
             dict.__setitem__("key", "value")
 
 
-class TestMagicDictMgetMethod(TestCase):
+class TestMagiDictMgetMethod(TestCase):
     """Test mget() and mg() methods"""
 
     def test_mget_existing_key(self):
@@ -2561,7 +2561,7 @@ class TestMagicDictMgetMethod(TestCase):
         self.assertEqual(md.mg("missing"), md.mget("missing"))
 
 
-class TestMagicDictStandardDictMethods(TestCase):
+class TestMagiDictStandardDictMethods(TestCase):
     """Test standard dict methods work correctly"""
 
     def test_keys_method(self):
@@ -2614,7 +2614,7 @@ class TestMagicDictStandardDictMethods(TestCase):
         self.assertEqual(md1["b"], 2)
 
 
-class TestMagicDictPickle(TestCase):
+class TestMagiDictPickle(TestCase):
     """Test pickle serialization"""
 
     def test_pickle_simple(self):
@@ -2642,7 +2642,7 @@ class TestMagicDictPickle(TestCase):
         self.assertIs(restored["self"], restored)
 
 
-class TestMagicDictDeepCopy(TestCase):
+class TestMagiDictDeepCopy(TestCase):
     """Test deepcopy functionality"""
 
     def test_deepcopy_simple(self):
@@ -2670,7 +2670,7 @@ class TestMagicDictDeepCopy(TestCase):
         self.assertIsNot(copied, md)
 
 
-class TestMagicDictDisenchant(TestCase):
+class TestMagiDictDisenchant(TestCase):
     """Test disenchant() method"""
 
     def test_disenchant_simple(self):
@@ -2681,7 +2681,7 @@ class TestMagicDictDisenchant(TestCase):
         self.assertNotIsInstance(result, MagiDict)
 
     def test_disenchant_nested(self):
-        """disenchant() recursively converts nested MagicDicts"""
+        """disenchant() recursively converts nested MagiDicts"""
         md = MagiDict({"user": {"profile": {"name": "Alice"}}})
         result = md.disenchant()
         self.assertIsInstance(result, dict)
@@ -2689,20 +2689,20 @@ class TestMagicDictDisenchant(TestCase):
         self.assertNotIsInstance(result["user"], MagiDict)
 
     def test_disenchant_with_lists(self):
-        """disenchant() handles lists with MagicDicts"""
+        """disenchant() handles lists with MagiDicts"""
         md = MagiDict({"items": [{"name": "item1"}, {"name": "item2"}]})
         result = md.disenchant()
         self.assertIsInstance(result["items"][0], dict)
         self.assertNotIsInstance(result["items"][0], MagiDict)
 
 
-class TestMagicDictHelperFunctions(TestCase):
+class TestMagiDictHelperFunctions(TestCase):
     """Test helper functions"""
 
-    def test_magic_loads(self):
-        """magic_loads() creates MagiDict from JSON"""
+    def test_magi_loads(self):
+        """magi_loads() creates MagiDict from JSON"""
         json_str = '{"user": {"name": "Alice"}}'
-        md = magic_loads(json_str)
+        md = magi_loads(json_str)
         self.assertIsInstance(md, MagiDict)
         self.assertEqual(md.user.name, "Alice")
 
@@ -2713,7 +2713,7 @@ class TestMagicDictHelperFunctions(TestCase):
         self.assertIsInstance(md, MagiDict)
         self.assertEqual(md.user.name, "Alice")
 
-    def test_enchant_already_magicdict(self):
+    def test_enchant_already_magidict(self):
         """enchant() returns MagiDict as-is"""
         md1 = MagiDict({"a": 1})
         md2 = enchant(md1)
@@ -2725,7 +2725,7 @@ class TestMagicDictHelperFunctions(TestCase):
             enchant([1, 2, 3])
 
 
-class TestMagicDictKeyConflicts(TestCase):
+class TestMagiDictKeyConflicts(TestCase):
     """Test handling of keys that conflict with dict methods"""
 
     def test_keys_conflict(self):
@@ -2743,11 +2743,11 @@ class TestMagicDictKeyConflicts(TestCase):
         self.assertEqual(md.mget("pop"), "another")
 
 
-class TestMagicDictMemoryBehavior(TestCase):
+class TestMagiDictMemoryBehavior(TestCase):
     """Test memory and performance characteristics"""
 
     def test_temporary_objects_garbage_collected(self):
-        """Temporary MagicDicts should be garbage collected"""
+        """Temporary MagiDicts should be garbage collected"""
 
         md = MagiDict({"user": {"name": "Alice"}})
 
@@ -2777,23 +2777,23 @@ class TestMagicDictMemoryBehavior(TestCase):
         self.assertEqual(result["value"], "deep")
 
 
-class TestMagicDictEqualityAndHashing(TestCase):
+class TestMagiDictEqualityAndHashing(TestCase):
     """Test equality comparisons and hashing"""
 
     def test_equality(self):
-        """MagicDicts with same content are equal"""
+        """MagiDicts with same content are equal"""
         md1 = MagiDict({"a": 1, "b": 2})
         md2 = MagiDict({"a": 1, "b": 2})
         self.assertEqual(md1, md2)
 
     def test_inequality(self):
-        """MagicDicts with different content are not equal"""
+        """MagiDicts with different content are not equal"""
         md1 = MagiDict({"a": 1})
         md2 = MagiDict({"a": 2})
         self.assertNotEqual(md1, md2)
 
-    def test_temporary_magicdict_equality(self):
-        """Temporary MagicDicts are equal if both empty"""
+    def test_temporary_magidict_equality(self):
+        """Temporary MagiDicts are equal if both empty"""
         md = MagiDict({"a": 1})
         temp1 = md.missing1
         temp2 = md.missing2
@@ -2806,7 +2806,7 @@ class TestMagicDictEqualityAndHashing(TestCase):
             hash(md)
 
 
-class TestMagicDictEdgeCases(TestCase):
+class TestMagiDictEdgeCases(TestCase):
     """Test various edge cases and complex scenarios"""
 
     def setUp(self):
@@ -2899,7 +2899,7 @@ class TestMagicDictEdgeCases(TestCase):
         self.assertEqual(self.md.new_key.b[0].c, 3)
 
     def test_protection_of_temporary_dicts(self):
-        """Test that temporary MagicDicts are protected against modification."""
+        """Test that temporary MagiDicts are protected against modification."""
         # From non-existent key
         with self.assertRaises(TypeError):
             self.md.foo["bar"] = 1
@@ -3025,7 +3025,7 @@ class TestMagicDictEdgeCases(TestCase):
             from_none["a"] = 1
 
     def test_helper_functions(self):
-        """Test enchant() and magic_loads() helper functions."""
+        """Test enchant() and magi_loads() helper functions."""
         # test enchant
         d = {"a": {"b": 1}}
         md = enchant(d)
@@ -3033,9 +3033,9 @@ class TestMagicDictEdgeCases(TestCase):
         self.assertIsInstance(md.a, MagiDict)
         self.assertEqual(md.a.b, 1)
 
-        # test magic_loads
+        # test magi_loads
         json_str = '{"user": {"name": "Bob"}, "items": [{"id": 1}]}'
-        md_json = magic_loads(json_str)
+        md_json = magi_loads(json_str)
         self.assertIsInstance(md_json, MagiDict)
         self.assertIsInstance(md_json.user, MagiDict)
         self.assertIsInstance(md_json["items"][0], MagiDict)
@@ -3117,13 +3117,13 @@ class TestMagicDictEdgeCases(TestCase):
         with self.assertRaises(IndexError):
             _ = md["users.2.name"]
 
-    def test_protected_magicdict_modification_raises(self):
+    def test_protected_magidict_modification_raises(self):
         md = MagiDict({})
         temp = md.nonexistent
         with self.assertRaises(TypeError):
             temp["x"] = 1
 
-    def test_update_and_copy_preserve_magicdict(self):
+    def test_update_and_copy_preserve_magidict(self):
         md = MagiDict({"a": {"b": 1}})
         md.update({"c": {"d": 2}})
         self.assertIsInstance(md.c, MagiDict)
@@ -3172,9 +3172,9 @@ class TestMagicDictEdgeCases(TestCase):
         self.assertEqual(restored, md)
         self.assertIsInstance(restored, MagiDict)
 
-    def test_magic_loads_from_json(self):
+    def test_magi_loads_from_json(self):
         s = '{"user": {"id": 5, "name": "Alice"}}'
-        md = magic_loads(s)
+        md = magi_loads(s)
         self.assertIsInstance(md, MagiDict)
         self.assertEqual(md.user.id, 5)
 
@@ -3201,13 +3201,13 @@ import datetime
 from collections import defaultdict
 
 
-class TestMagicDictAdvanced(TestCase):
+class TestMagiDictAdvanced(TestCase):
     """
     Tests for advanced edge cases, behavioral clarifications, and interactions
     with other types not covered in the main test suite.
     """
 
-    def test_hook_converts_defaultdict_to_magicdict(self):
+    def test_hook_converts_defaultdict_to_magidict(self):
         """
         Verify that dict subclasses like defaultdict are converted into MagiDict,
         losing their special behaviors (e.g., default_factory).
@@ -3320,7 +3320,7 @@ class TestMagicDictAdvanced(TestCase):
         self.assertIn("my_attr", dir_list)
         self.assertEqual(md.my_attr, "instance_value")
 
-    def test_initialization_with_existing_magicdict_instance(self):
+    def test_initialization_with_existing_magidict_instance(self):
         """
         Test initializing a MagiDict with another MagiDict instance.
         This should behave like a copy.
@@ -3337,7 +3337,7 @@ class TestMagicDictAdvanced(TestCase):
         self.assertIs(new_md["b"], nested)
 
 
-class TestMagicDictEdgeCases3(TestCase):
+class TestMagiDictEdgeCases3(TestCase):
     """Additional edge cases and clarifications."""
 
     def test_exact_key_with_dot_preferred_over_nested(self):
@@ -3382,8 +3382,8 @@ class TestMagicDictEdgeCases3(TestCase):
         # circular reference preserved: out['self'] should be the outer dict
         self.assertIs(out["self"], out)
 
-    def test_protected_magicdict_blocks_mutations(self):
-        """Protected MagicDicts raise TypeError on mutating operations."""
+    def test_protected_magidict_blocks_mutations(self):
+        """Protected MagiDicts raise TypeError on mutating operations."""
         md = MagiDict({"maybe": None})
 
         none_md = md.maybe  # attribute access returns a protected MagiDict
@@ -3408,7 +3408,7 @@ class TestMagicDictEdgeCases3(TestCase):
             none_md.setdefault("x", 1)
 
 
-class TestMagicDictEdgesCases2(TestCase):
+class TestMagiDictEdgesCases2(TestCase):
 
     def setUp(self):
         """Set up a standard nested dictionary and MagiDict instance for each test."""
@@ -3456,10 +3456,10 @@ class TestMagicDictEdgesCases2(TestCase):
         with self.assertRaises(TypeError):
             enchant("not a dict")
 
-    def test_magic_loads_function(self):
-        """Test the magic_loads() helper function for JSON."""
+    def test_magi_loads_function(self):
+        """Test the magi_loads() helper function for JSON."""
         json_string = '{"user": {"name": "Bob"}, "roles": [{"role": "admin"}]}'
-        md = magic_loads(json_string)
+        md = magi_loads(json_string)
         self.assertIsInstance(md, MagiDict)
         self.assertIsInstance(md.user, MagiDict)
         self.assertIsInstance(md.roles[0], MagiDict)
@@ -3500,7 +3500,7 @@ class TestMagicDictEdgesCases2(TestCase):
 
     # --- Test Graceful Failure and Safe Chaining ---
 
-    def test_missing_attribute_returns_empty_magicdict(self):
+    def test_missing_attribute_returns_empty_magidict(self):
         """Accessing a non-existent key via attribute should return an empty MagiDict."""
         empty_md = self.md.non_existent_key
         self.assertIsInstance(empty_md, MagiDict)
@@ -3547,8 +3547,8 @@ class TestMagicDictEdgesCases2(TestCase):
         self.assertIsInstance(md.new_data, MagiDict)
         self.assertIsInstance(md.new_data.b, MagiDict)
 
-    def test_modification_of_protected_magicdict_raises_error(self):
-        """Verify that temporary MagicDicts from missing keys/None cannot be modified."""
+    def test_modification_of_protected_magidict_raises_error(self):
+        """Verify that temporary MagiDicts from missing keys/None cannot be modified."""
         protected_from_missing = self.md.non_existent
         protected_from_none = self.md.user.nickname
 
@@ -3671,7 +3671,7 @@ class TestMagicDictEdgesCases2(TestCase):
         self.assertIn("update", d)
 
 
-class TestMagicDictMissingEdgeCases(TestCase):
+class TestMagiDictMissingEdgeCases(TestCase):
     """Additional edge cases not covered in the main test suite."""
 
     def test_weakref_compatibility(self):
@@ -3853,8 +3853,8 @@ class TestMagicDictMissingEdgeCases(TestCase):
         self.assertEqual(new_md, md)
         self.assertIsInstance(new_md.a, MagiDict)
 
-    def test_equality_with_empty_protected_magicdicts(self):
-        """Test that empty protected MagicDicts compare equal."""
+    def test_equality_with_empty_protected_magidicts(self):
+        """Test that empty protected MagiDicts compare equal."""
         md = MagiDict({})
 
         protected1 = md.missing1
@@ -3924,7 +3924,7 @@ class TestMagicDictMissingEdgeCases(TestCase):
         # Protected attributes shouldn't create confusion
         self.assertIn("__dict__", d)
 
-    def test_json_dumps_on_magicdict_directly(self):
+    def test_json_dumps_on_magidict_directly(self):
         """Test that json.dumps works directly on MagiDict."""
         md = MagiDict({"a": 1, "b": {"c": 2}})
 
@@ -3987,7 +3987,7 @@ class TestMagicDictMissingEdgeCases(TestCase):
         with self.assertRaises(TypeError):
             md.data[0] = {"c": 3}
 
-    def test_nested_magicdict_in_list_after_append(self):
+    def test_nested_magidict_in_list_after_append(self):
         """Test that manually appending a MagiDict to a list preserves it."""
         md = MagiDict({"items": []})
         nested = MagiDict({"inner": "value"})
@@ -4040,7 +4040,7 @@ class TestMagicDictMissingEdgeCases(TestCase):
         size = sys.getsizeof(md)
         self.assertGreater(size, 0)
 
-    def test_format_string_with_magicdict(self):
+    def test_format_string_with_magidict(self):
         """Test using MagiDict in format strings."""
         md = MagiDict({"name": "Alice", "age": 30})
 
@@ -4063,7 +4063,7 @@ class TestMagicDictMissingEdgeCases(TestCase):
         result = md.keys
         self.assertTrue(callable(result))
 
-    def test_getattr_missing_creates_magicdict(self):
+    def test_getattr_missing_creates_magidict(self):
         """Accessing missing attr should create an empty MagiDict."""
         md = MagiDict()
         result = md.not_there
@@ -4104,10 +4104,10 @@ class TestMagicDictMissingEdgeCases(TestCase):
         self.assertIs(result["self"], result)
 
     # ---------- Helper functions ----------
-    def test_magic_loads_and_enchant(self):
-        """Ensure magic_loads and enchant behave as expected."""
+    def test_magi_loads_and_enchant(self):
+        """Ensure magi_loads and enchant behave as expected."""
         data = {"a": {"b": 2}}
-        md = magic_loads(json.dumps(data))
+        md = magi_loads(json.dumps(data))
         self.assertIsInstance(md, MagiDict)
         self.assertEqual(md.a.b, 2)
 
@@ -4135,7 +4135,7 @@ class TestMissingCoverage(TestCase):
         # Accessing __class__ should also use fallback
         self.assertEqual(md.__class__, MagiDict)
 
-    def test_getattr_returns_empty_magicdict_on_attribute_error(self):
+    def test_getattr_returns_empty_magidict_on_attribute_error(self):
         """Test that __getattr__ returns empty MagiDict when AttributeError is raised."""
         md = MagiDict({"x": 1})
 
@@ -4277,7 +4277,7 @@ class TestMissingCoverage(TestCase):
         items_method = md.items
         self.assertTrue(callable(items_method))
 
-    def test_protected_magicdict_all_mutation_methods(self):
+    def test_protected_magidict_all_mutation_methods(self):
         """Test that all mutation methods are blocked on protected MagiDict."""
         md = MagiDict({"x": None})
         protected = md.x
@@ -4342,7 +4342,7 @@ class TestMissingCoverage(TestCase):
 class TestHelperFunctions(TestCase):
     """Test helper functions to ensure complete coverage."""
 
-    def test_enchant_with_magicdict_returns_same_instance(self):
+    def test_enchant_with_magidict_returns_same_instance(self):
         """Test that enchant returns the same instance when given MagiDict."""
         md = MagiDict({"a": 1})
         result = enchant(md)
@@ -4367,10 +4367,10 @@ class TestHelperFunctions(TestCase):
         with self.assertRaises(TypeError):
             enchant(123)
 
-    def test_magic_loads_creates_magicdict(self):
-        """Test that magic_loads creates MagiDict from JSON."""
+    def test_magi_loads_creates_magidict(self):
+        """Test that magi_loads creates MagiDict from JSON."""
         json_str = '{"user": {"name": "Alice", "age": 30}, "items": [{"id": 1}]}'
-        result = magic_loads(json_str)
+        result = magi_loads(json_str)
 
         self.assertIsInstance(result, MagiDict)
         self.assertIsInstance(result.user, MagiDict)
@@ -4378,9 +4378,9 @@ class TestHelperFunctions(TestCase):
         self.assertEqual(result.user.name, "Alice")
 
 
-# Assume MagiDict and helper functions (enchant, magic_loads) are in a file
+# Assume MagiDict and helper functions (enchant, magi_loads) are in a file
 # named safedict.py or are accessible in the current scope.
-# from safedict.safedict import MagiDict, enchant, magic_loads
+# from safedict.safedict import MagiDict, enchant, magi_loads
 
 
 class TestMissingCoverageAnother(TestCase):
@@ -4404,7 +4404,7 @@ class TestMissingCoverageAnother(TestCase):
         self.assertEqual(md.__class__, MagiDict)
         self.assertIsInstance(md.__dict__, dict)
 
-    def test_getattr_raises_attributeerror_and_returns_empty_magicdict(self):
+    def test_getattr_raises_attributeerror_and_returns_empty_magidict(self):
         """
         Covers lines 208-210: Tests that accessing a completely non-existent
         attribute triggers an AttributeError in the fallback, which is then
@@ -4535,7 +4535,7 @@ class TestHelperFunctionsAgain(TestCase):
     Test helper functions to ensure complete coverage.
     """
 
-    def test_enchant_with_magicdict_returns_same_instance(self):
+    def test_enchant_with_magidict_returns_same_instance(self):
         """Test that enchant returns the same instance when given MagiDict."""
         md = MagiDict({"a": 1})
         result = enchant(md)
@@ -4558,10 +4558,10 @@ class TestHelperFunctionsAgain(TestCase):
         with self.assertRaises(TypeError):
             enchant(123)
 
-    def test_magic_loads_creates_magicdict(self):
-        """Test that magic_loads creates MagiDict from JSON."""
+    def test_magi_loads_creates_magidict(self):
+        """Test that magi_loads creates MagiDict from JSON."""
         json_str = '{"user": {"name": "Alice", "age": 30}, "items": [{"id": 1}]}'
-        result = magic_loads(json_str)
+        result = magi_loads(json_str)
         self.assertIsInstance(result, MagiDict)
         self.assertIsInstance(result.user, MagiDict)
         self.assertIsInstance(result["items"][0], MagiDict)
@@ -4669,7 +4669,7 @@ class TestHelperFunctionsAgain(TestCase):
 
     def test_disenchant_does_not_traverse_custom_object_keys(self):
         """
-        Verify that disenchant does NOT recursively convert MagicDicts nested
+        Verify that disenchant does NOT recursively convert MagiDicts nested
         inside arbitrary custom objects when they are used as keys.
         """
 
@@ -4788,21 +4788,21 @@ class TestHelperFunctionsAgain(TestCase):
 class TestNoneFunction(TestCase):
     """Test suite for the none() function."""
 
-    def test_none_with_missing_key_magicdict(self):
+    def test_none_with_missing_key_magidict(self):
         """Test that none() returns None for MagiDict from missing key."""
         md = MagiDict({"a": 1})
         missing = md.missing_key  # Accessing missing key creates empty MagiDict
         result = none(missing)
         self.assertIsNone(result)
 
-    def test_none_with_none_value_magicdict(self):
+    def test_none_with_none_value_magidict(self):
         """Test that none() returns None for MagiDict from None value."""
         md = MagiDict({"a": None})
         none_value = md.a  # Accessing None value creates empty MagiDict
         result = none(none_value)
         self.assertIsNone(result)
 
-    def test_none_with_regular_empty_magicdict(self):
+    def test_none_with_regular_empty_magidict(self):
         """Test that none() returns the object for regular empty MagiDict."""
         md = MagiDict()
         result = none(md)
@@ -4812,14 +4812,14 @@ class TestNoneFunction(TestCase):
         self.assertFalse(getattr(result, "_from_none", False))
         self.assertFalse(getattr(result, "_from_missing", False))
 
-    def test_none_with_non_empty_magicdict(self):
+    def test_none_with_non_empty_magidict(self):
         """Test that none() returns the object for non-empty MagiDict."""
         md = MagiDict({"a": 1, "b": 2})
         result = none(md)
         self.assertIs(result, md)
         self.assertEqual(result, {"a": 1, "b": 2})
 
-    def test_none_with_non_magicdict_objects(self):
+    def test_none_with_non_magidict_objects(self):
         """Test that none() returns the object unchanged for non-MagiDict types."""
         # Test with various types
         test_cases = [
@@ -4870,7 +4870,7 @@ class TestNoneFunction(TestCase):
         result = none(None)
         self.assertIsNone(result)
 
-    def test_none_with_empty_magicdict_with_items_added(self):
+    def test_none_with_empty_magidict_with_items_added(self):
         """Test that none() returns object if MagiDict has items."""
         md = MagiDict({"a": 1})
         missing = md.missing_key  # Get empty MagiDict from missing key
@@ -4947,7 +4947,7 @@ class TestFromMissingAttribute(TestCase):
         missing = md.x.y.z
         self.assertTrue(getattr(missing, "_from_missing", False))
 
-    def test_from_missing_not_set_on_regular_magicdict(self):
+    def test_from_missing_not_set_on_regular_magidict(self):
         """Test that regular MagiDict doesn't have _from_missing."""
         md = MagiDict({"a": 1})
         self.assertFalse(getattr(md, "_from_missing", False))
@@ -4973,7 +4973,7 @@ class TestFromMissingAttribute(TestCase):
         self.assertTrue(getattr(missing, "_from_missing", False))
 
     def test_from_missing_prevents_modifications(self):
-        """Test that _from_missing MagicDicts prevent modifications."""
+        """Test that _from_missing MagiDicts prevent modifications."""
         md = MagiDict({"a": 1})
         missing = md.missing_key
 
@@ -5049,7 +5049,7 @@ class TestFromNoneAttribute(TestCase):
         self.assertFalse(getattr(none_val, "_from_missing", False))
 
     def test_from_none_prevents_modifications(self):
-        """Test that _from_none MagicDicts prevent modifications."""
+        """Test that _from_none MagiDicts prevent modifications."""
         md = MagiDict({"a": None})
         none_val = md.a
 
@@ -5144,7 +5144,7 @@ class TestFromMissingVsFromNone(TestCase):
 class TestEdgeCases(TestCase):
     """Test edge cases for _from_missing and _from_none."""
 
-    def test_empty_magicdict_no_special_flags(self):
+    def test_empty_magidict_no_special_flags(self):
         """Test that regular empty MagiDict has no special flags."""
         md = MagiDict()
         self.assertFalse(getattr(md, "_from_missing", False))
@@ -5245,7 +5245,7 @@ class TestEdgeCases(TestCase):
         self.assertIsNone(item_result)
 
     def test_boolean_evaluation(self):
-        """Test that protected MagicDicts evaluate to False."""
+        """Test that protected MagiDicts evaluate to False."""
         md = MagiDict({"a": None})
 
         missing = md.missing_key
@@ -5259,8 +5259,8 @@ class TestEdgeCases(TestCase):
         self.assertIsInstance(missing, MagiDict)
         self.assertIsInstance(none_val, MagiDict)
 
-    def test_length_of_protected_magicdict(self):
-        """Test that protected MagicDicts have length 0."""
+    def test_length_of_protected_magidict(self):
+        """Test that protected MagiDicts have length 0."""
         md = MagiDict({"a": None})
 
         missing = md.missing_key
@@ -5269,8 +5269,8 @@ class TestEdgeCases(TestCase):
         self.assertEqual(len(missing), 0)
         self.assertEqual(len(none_val), 0)
 
-    def test_iteration_over_protected_magicdict(self):
-        """Test that protected MagicDicts are empty when iterated."""
+    def test_iteration_over_protected_magidict(self):
+        """Test that protected MagiDicts are empty when iterated."""
         md = MagiDict({"a": None})
 
         missing = md.missing_key
@@ -5328,7 +5328,7 @@ class TestProtectionMechanisms(TestCase):
                 op()
 
     def test_read_operations_work_on_protected(self):
-        """Test that read operations work fine on protected MagicDicts."""
+        """Test that read operations work fine on protected MagiDicts."""
         md = MagiDict({"a": None})
         missing = md.missing_key
         none_val = md.a
@@ -5373,7 +5373,7 @@ class TestCopyFlagPreservation(TestCase):
         self.assertTrue(getattr(copied, "_from_missing", False))
         self.assertFalse(getattr(copied, "_from_none", False))
 
-    def test_copy_of_regular_magicdict(self):
+    def test_copy_of_regular_magidict(self):
         """Test that copy() of regular MagiDict has no special flags."""
         md = MagiDict({"a": 1, "b": 2})
         copied = md.copy()
@@ -5382,7 +5382,7 @@ class TestCopyFlagPreservation(TestCase):
         self.assertFalse(getattr(copied, "_from_missing", False))
 
     def test_copied_protected_still_protected(self):
-        """Test that copied protected MagicDicts remain protected."""
+        """Test that copied protected MagiDicts remain protected."""
         md = MagiDict({"a": None})
         none_val = md.a
         copied = none_val.copy()
@@ -5423,7 +5423,7 @@ class TestDeepcopyFlagPreservation(TestCase):
         self.assertTrue(getattr(deep_copied, "_from_missing", False))
         self.assertFalse(getattr(deep_copied, "_from_none", False))
 
-    def test_deepcopy_of_regular_magicdict(self):
+    def test_deepcopy_of_regular_magidict(self):
         """Test that deepcopy() of regular MagiDict has no special flags."""
         md = MagiDict({"a": 1, "b": {"c": 2}})
         deep_copied = deepcopy(md)
@@ -5432,7 +5432,7 @@ class TestDeepcopyFlagPreservation(TestCase):
         self.assertFalse(getattr(deep_copied, "_from_missing", False))
 
     def test_deepcopy_with_nested_structure(self):
-        """Test deepcopy with nested MagicDicts preserves flags."""
+        """Test deepcopy with nested MagiDicts preserves flags."""
         md = MagiDict({"a": {"b": {"c": None}}})
         none_val = md.a.b.c
 
@@ -5440,7 +5440,7 @@ class TestDeepcopyFlagPreservation(TestCase):
         self.assertTrue(getattr(deep_copied, "_from_none", False))
 
     def test_deepcopy_protected_still_protected(self):
-        """Test that deepcopied protected MagicDicts remain protected."""
+        """Test that deepcopied protected MagiDicts remain protected."""
         md = MagiDict({"a": None})
         none_val = md.a
         deep_copied = deepcopy(none_val)
@@ -5477,7 +5477,7 @@ class TestPickleFlagPreservation(TestCase):
         self.assertTrue(getattr(unpickled, "_from_missing", False))
         self.assertFalse(getattr(unpickled, "_from_none", False))
 
-    def test_pickle_regular_magicdict(self):
+    def test_pickle_regular_magidict(self):
         """Test that pickle/unpickle of regular MagiDict has no special flags."""
         md = MagiDict({"a": 1, "b": 2})
 
@@ -5501,7 +5501,7 @@ class TestPickleFlagPreservation(TestCase):
         self.assertTrue(getattr(unpickled, "_from_none", False))
 
     def test_pickle_protected_still_protected(self):
-        """Test that unpickled protected MagicDicts remain protected."""
+        """Test that unpickled protected MagiDicts remain protected."""
         md = MagiDict({"a": None})
         none_val = md.a
 
@@ -5615,7 +5615,7 @@ class TestFlagPreservationWithNesting(TestCase):
     """Test flag preservation with nested structures."""
 
     def test_deepcopy_nested_protected_dicts(self):
-        """Test deepcopy with structure containing protected MagicDicts."""
+        """Test deepcopy with structure containing protected MagiDicts."""
         md = MagiDict({"data": {"a": None, "b": 1}})
 
         # Access None value
@@ -5631,13 +5631,13 @@ class TestFlagPreservationWithNesting(TestCase):
         self.assertTrue(getattr(copied_none, "_from_none", False))
 
     def test_pickle_structure_with_protected(self):
-        """Test pickle with structure containing protected MagicDicts."""
+        """Test pickle with structure containing protected MagiDicts."""
         md = MagiDict({"x": None, "y": {"z": None}})
 
         pickled = pickle.dumps(md)
         unpickled = pickle.loads(pickled)
 
-        # Access should still create protected MagicDicts
+        # Access should still create protected MagiDicts
         none_x = unpickled.x
         none_z = unpickled.y.z
 

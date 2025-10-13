@@ -1,5 +1,5 @@
 [magicdict_docs.md](https://github.com/user-attachments/files/22863846/magicdict_docs.md)
-# MagicDict
+# MagiDict
 
 Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>
 Has your partner left you because whenever they ask you to do something, you always reply "I'll try, except KeyError as e"?<br>
@@ -10,10 +10,10 @@ When you're out in public, do you constantly have the feeling that Keanu Reeves 
 And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took that course in JavaScript that your friend gave you a voucher for, before they moved to a different country and you lost contact with them, so you could finally use optional chaining and nullish coalescing operators to safely access nested properties without all the drama?
 
 If you answered "yes" to any of these questions, you're not alone!
-But don't worry anymore, because there's finally a solution that doesn't involve learning a whole new programming language or changing your religion to JavaScript! It's called ✨MagicDict✨ and it's here to save your sanity!
+But don't worry anymore, because there's finally a solution that doesn't involve learning a whole new programming language or changing your religion to JavaScript! It's called ✨MagiDict✨ and it's here to save your sanity!
 
 
-MagicDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with recursive conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
+MagiDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with recursive conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
 
 Stop chaining get()'s and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
 
@@ -30,11 +30,11 @@ Stop chaining get()'s and brackets like it's 2003 and start living your best lif
 
 ## Overview
 
-`MagicDict` extends Python's built-in `dict` to offer a more convenient and forgiving way to work with nested dictionaries. It's particularly useful when working with JSON data, API responses, configuration files, or any deeply nested data structures where safe navigation is important.
+`MagiDict` extends Python's built-in `dict` to offer a more convenient and forgiving way to work with nested dictionaries. It's particularly useful when working with JSON data, API responses, configuration files, or any deeply nested data structures where safe navigation is important.
 
 ## Installation
 
-Simply copy the `MagicDict` class into your project.
+Simply copy the `MagiDict` class into your project.
 
 ## Key Features
 
@@ -43,7 +43,7 @@ Simply copy the `MagicDict` class into your project.
 Access dictionary keys using dot notation instead of bracket notation:
 
 ```python
-md = MagicDict({'user': {'name': 'Alice', 'age': 30}})
+md = MagiDict({'user': {'name': 'Alice', 'age': 30}})
 md.user.name # 'Alice'
 md.user.age  # 30
 ```
@@ -53,7 +53,7 @@ md.user.age  # 30
 Use dot-separated strings for deep access, including list indices:
 
 ```python
-md = MagicDict({
+md = MagiDict({
     'users': [
         {'name': 'Alice', 'id': 1},
         {'name': 'Keanu', 'id': 2}
@@ -66,7 +66,7 @@ md['users.1.id']    # 2
 
 ### 3. Recursive Conversion
 
-Nested dictionaries are automatically converted to `MagicDict` instances:
+Nested dictionaries are automatically converted to `MagiDict` instances:
 
 ```python
 data = {
@@ -78,19 +78,19 @@ data = {
         }
     }
 }
-md = MagicDict(data)
+md = MagiDict(data)
 md.company.departments.engineering.employees  # 50
 ```
 
 ### 4. Graceful Failure
 
-Accessing non-existent keys returns an empty `MagicDict` instead of raising errors:
+Accessing non-existent keys returns an empty `MagiDict` instead of raising errors:
 
 ```python
-md = MagicDict({'user': {'name': 'Alice'}})
+md = MagiDict({'user': {'name': 'Alice'}})
 
-# No error, returns empty MagicDict
-md.user.email.address.street # MagicDict({})
+# No error, returns empty MagiDict
+md.user.email.address.street # MagiDict({})
 
 # Safe chaining
 if md.settings.theme.dark_mode:
@@ -103,9 +103,9 @@ if md.settings.theme.dark_mode:
 Keys with `None` values can be safely chained:
 
 ```python
-md = MagicDict({'user': {'nickname': None}})
+md = MagiDict({'user': {'nickname': None}})
 
-md.user.nickname.stage_name  # MagicDict({})
+md.user.nickname.stage_name  # MagiDict({})
 
 # Bracket access returns the actual None value
 md.user['nickname']  # None
@@ -117,16 +117,16 @@ All standard `dict` methods and behaviors work as expected. For example missing 
 
 ### 7. Safe `mget()` Method
 
-`mget` is MagicDict's native `get` method. Unless a custom default is provided, it returns an empty `MagicDict` for missing keys or `None` values:
+`mget` is MagiDict's native `get` method. Unless a custom default is provided, it returns an empty `MagiDict` for missing keys or `None` values:
 
 ```python
-md = MagicDict({'1-invalid': 'value', 'valid': None})
+md = MagiDict({'1-invalid': 'value', 'valid': None})
 
 # Works with invalid identifiers
 md.mget('1-invalid')  # 'value'
 
-# Returns empty MagicDict for missing keys
-md.mget('missing')  # MagicDict({})
+# Returns empty MagiDict for missing keys
+md.mget('missing')  # MagiDict({})
 
 # Shorthand version
 md.mg('1-invalid')  # 'value'
@@ -140,16 +140,16 @@ md.mget('missing', 'default')  # 'default'
 Use `disenchant()` to convert back to a standard Python `dict`:
 
 ```python
-md = MagicDict({'user': {'name': 'Alice'}})
+md = MagiDict({'user': {'name': 'Alice'}})
 standard_dict = md.disenchant()
 type(standard_dict)  # <class 'dict'>
 ```
 
-### 9. Convert empty MagicDict to None
-Use `none()` to convert empty MagicDict instances that were created from `None` or missing keys back to `None`:
+### 9. Convert empty MagiDict to None
+Use `none()` to convert empty MagiDict instances that were created from `None` or missing keys back to `None`:
 
 ```python
-md = MagicDict({'user': None, 'age': 25})
+md = MagiDict({'user': None, 'age': 25})
 none(md.user)       # None
 none(md.user.name)  # None
 none(md.age)        # 25
@@ -160,28 +160,28 @@ none(md.age)        # 25
 ### Constructor
 
 ```python
-MagicDict(*args, **kwargs)
+MagiDict(*args, **kwargs)
 ```
 
-Creates a new `MagicDict` instance. Accepts the same arguments as the built-in `dict`.
+Creates a new `MagiDict` instance. Accepts the same arguments as the built-in `dict`.
 
 **Examples:**
 
 ```python
-MagicDict(*args, **kwargs)
+MagiDict(*args, **kwargs)
 ```
 or
 ```python
 d = {"key": "value"}
 
-md = MagicDict(d)
+md = MagiDict(d)
 ```
 
 ### Methods
 
 #### `mget(key, default=...)`
 
-Safe get method that mimics `dict`'s `get()`, but returns an empty `MagicDict` for missing keys or `None` values unless a custom default is provided.
+Safe get method that mimics `dict`'s `get()`, but returns an empty `MagiDict` for missing keys or `None` values unless a custom default is provided.
 
 **Parameters:**
 
@@ -191,8 +191,8 @@ Safe get method that mimics `dict`'s `get()`, but returns an empty `MagicDict` f
 **Returns:**
 
 - The value if key exists and is not `None`
-- Empty `MagicDict` if key doesn't exist (unless custom default provided)
-- Empty `MagicDict` if value is `None` (unless default explicitly set to `None`)
+- Empty `MagiDict` if key doesn't exist (unless custom default provided)
+- Empty `MagiDict` if value is `None` (unless default explicitly set to `None`)
 
 #### `mg(key, default=...)`
 
@@ -200,14 +200,14 @@ Shorthand alias for `mget()`.
 
 #### `disenchant()`
 
-Converts the `MagicDict` and all nested `MagicDict` instances back to standard Python dictionaries. Handles circular references gracefully.
+Converts the `MagiDict` and all nested `MagiDict` instances back to standard Python dictionaries. Handles circular references gracefully.
 
 **Returns:** A standard Python `dict`
 
 **Example:**
 
 ```python
-md = MagicDict({'nested': {'data': [1, 2, 3]}})
+md = MagiDict({'nested': {'data': [1, 2, 3]}})
 regular_dict = md.disenchant()
 type(regular_dict)  # <class 'dict'>
 ```
@@ -234,37 +234,37 @@ All standard dictionary methods are supported:
 
 ### `enchant(d)`
 
-Converts a standard dictionary into a `MagicDict`.
+Converts a standard dictionary into a `MagiDict`.
 
 **Parameters:**
 
 - `d`: A standard Python dictionary
 
-**Returns:** A `MagicDict` instance
+**Returns:** A `MagiDict` instance
 
-### `magic_loads(s, **kwargs)`
+### `magi_loads(s, **kwargs)`
 
-Deserializes a JSON string directly into a `MagicDict` instead of a standard dict.
+Deserializes a JSON string directly into a `MagiDict` instead of a standard dict.
 
 **Parameters:**
 
 - `s`: JSON string to parse
 - `**kwargs`: Additional arguments passed to `json.loads()`
 
-**Returns:** A `MagicDict` instance
+**Returns:** A `MagiDict` instance
 
 **Example:**
 
 ```python
 
 json_string = '{"user": {"name": "Alice", "age": 30}}'
-md = magic_loads(json_string)
+md = magi_loads(json_string)
 md.user.name  # 'Alice'
 ```
 
 ### `none(obj)`
 
-Converts an empty `MagicDict` that was created from a `None` or missing key into `None`. Otherwise, returns the object as is.
+Converts an empty `MagiDict` that was created from a `None` or missing key into `None`. Otherwise, returns the object as is.
 
 **Parameters:**
 
@@ -272,7 +272,7 @@ Converts an empty `MagicDict` that was created from a `None` or missing key into
 
 **Returns:**
 
-- `None` if `obj` is an empty `MagicDict` created from `None` or missing keyFtest
+- `None` if `obj` is an empty `MagiDict` created from `None` or missing keyFtest
 - `obj` otherwise
 
 ## Important Caveats
@@ -282,7 +282,7 @@ Converts an empty `MagicDict` that was created from a `None` or missing key into
 Keys that conflict with standard `dict` methods must be accessed using brackets, `mget` or `get`:
 
 ```python
-md = MagicDict({'keys': 'my_value', 'items': 'another_value'})
+md = MagiDict({'keys': 'my_value', 'items': 'another_value'})
 
 # These return dict methods, not your values
 md.keys   # <built-in method keys...>
@@ -303,7 +303,7 @@ md.mget('keys')  # 'my_value'
 Keys that aren't valid Python identifiers must use bracket access or `mget()`:
 
 ```python
-md = MagicDict({
+md = MagiDict({
     '1-key': 'value1',
     'my key': 'value2',
     'my-key': 'value3'
@@ -324,7 +324,7 @@ print(md.my key)       # SyntaxError
 Non-string keys can only be accessed using standard bracket notation or `mget()`:
 
 ```python
-md = MagicDict({1: 'one', (2, 3): 'tuple_key'})
+md = MagiDict({1: 'one', (2, 3): 'tuple_key'})
 
 md[1]        # 'one'
 md[(2, 3)]   # 'tuple_key'
@@ -333,12 +333,12 @@ md.mget(1)   # 'one'
 print(md.1)  # SyntaxError
 ```
 
-### 4. Protected Empty MagicDicts
+### 4. Protected Empty MagiDicts
 
-Empty `MagicDict` instances returned from missing keys or `None` values are protected from modification:
+Empty `MagiDict` instances returned from missing keys or `None` values are protected from modification:
 
 ```python
-md = MagicDict({'user': None})
+md = MagiDict({'user': None})
 
 md.user["name"] = 'Alice'  # TypeError
 
@@ -352,7 +352,7 @@ This protection prevents silent bugs where you might accidentally try to modify 
 Setting or updating keys using dot notation is not supported. Use bracket notation instead. As with standard dicts, this is purposely restricted to avoid confusion and potential bugs.
 
 ```python
-md = MagicDict({'user': {'name': 'Alice'}})
+md = MagiDict({'user': {'name': 'Alice'}})
 
 md.user.name = 'Keanu'  # AttributeError
 md.user.age = 30      # AttributeError
@@ -365,11 +365,11 @@ md['user']['age'] = 30
 
 ### Pickle Support
 
-`MagicDict` supports pickling and unpickling:
+`MagiDict` supports pickling and unpickling:
 
 ```python
 
-md = MagicDict({'data': {'nested': 'value'}})
+md = MagiDict({'data': {'nested': 'value'}})
 pickled = pickle.dumps(md)
 restored = pickle.loads(pickled)
 restored.data.nested  # 'value'
@@ -379,7 +379,7 @@ restored.data.nested  # 'value'
 
 ```python
 
-md1 = MagicDict({'user': {'name': 'Alice'}})
+md1 = MagiDict({'user': {'name': 'Alice'}})
 md2 = deepcopy(md1)
 md2.user.name = 'Keanu'
 
@@ -392,17 +392,17 @@ md2.user.name  # 'Keanu'
 Python 3.9+ dict merge operator is supported:
 
 ```python
-md = MagicDict({'a': 1})
+md = MagiDict({'a': 1})
 md |= {'b': 2, 'c': 3}
-md  # MagicDict({'a': 1, 'b': 2, 'c': 3})
+md  # MagiDict({'a': 1, 'b': 2, 'c': 3})
 ```
 
 ### Circular Reference Handling
 
-`MagicDict` gracefully handles circular references:
+`MagiDict` gracefully handles circular references:
 
 ```python
-md = MagicDict({'name': 'root'})
+md = MagiDict({'name': 'root'})
 md['self'] = md  # Circular reference
 
 # Access works
@@ -415,7 +415,7 @@ regular = md.disenchant()
 
 ### Auto-completion Support
 
-`MagicDict` provides intelligent auto-completion in IPython, Jupyter notebooks and IDE's.
+`MagiDict` provides intelligent auto-completion in IPython, Jupyter notebooks and IDE's.
 
 ## Performance Considerations
 
@@ -423,7 +423,7 @@ regular = md.disenchant()
 - All standard and custom functionality
 - Circular and self references through pickle/deepcopy/disenchant
 - Concurrent access patterns (multi-threaded reads/writes)
-- Protected MagicDict mutation attempts
+- Protected MagiDict mutation attempts
 - Deep nesting with recursion limits and stack overflow prevention
 - Type preservation through operations
 
@@ -467,16 +467,16 @@ md = enchant(regular_dict)
 regular = {'user': {'profile': {'name': 'Alice'}}}
 name = regular.get('user', {}).get('profile', {}).get('name', 'Unknown')
 
-# MagicDict - clean and safe
-md = MagicDict({'user': {'profile': {'name': 'Alice'}}})
+# MagiDict - clean and safe
+md = MagiDict({'user': {'profile': {'name': 'Alice'}}})
 name = md.user.profile.name or 'Unknown'
 ```
 
 ### vs. DotDict/AttrDict Libraries
 
-MagicDict provides additional features:
+MagiDict provides additional features:
 
-- Safe chaining with missing keys (returns empty MagicDict)
+- Safe chaining with missing keys (returns empty MagiDict)
 - Safe chaining with None values
 - Dot notation in bracket access
 - Built-in `mget()` for safe access
@@ -488,7 +488,7 @@ MagicDict provides additional features:
 ### KeyError on Dot Notation Access
 
 ```python
-md = MagicDict({'user': {'name': 'Alice'}})
+md = MagiDict({'user': {'name': 'Alice'}})
 
 email = md['user']['email'] #KeyError
 email = md['user.email'] #KeyError
@@ -500,17 +500,17 @@ email = md.user.email or 'no-email'
 ### Cannot Modify Error
 
 ```python
-md = MagicDict({'user': None})
+md = MagiDict({'user': None})
 
 md.user.name = 'Alice' #TypeError
 ```
 
-### Unexpected Empty MagicDict
+### Unexpected Empty MagiDict
 
 ```python
-md = MagicDict({'value': None})
+md = MagiDict({'value': None})
 
-md.value  # MagicDict({})
+md.value  # MagiDict({})
 
 # Use bracket access to get actual None
 md['value']  # None
