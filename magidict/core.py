@@ -332,7 +332,7 @@ class MagiDict(dict):
 
 def magi_loads(s: str, **kwargs) -> MagiDict:
     """Deserialize a JSON string into a MagiDict instead of a dict."""
-    return json.loads(s, object_hook=MagiDict)
+    return json.loads(s, object_hook=MagiDict, **kwargs)
 
 
 def enchant(d: dict) -> MagiDict:
