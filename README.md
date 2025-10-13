@@ -33,7 +33,32 @@ Stop chaining get()'s and brackets like it's 2003 and start living your best lif
 
 ## Installation
 
-Simply copy the `MagiDict` class into your project.
+You can install MagiDict via pip:
+
+```bash
+pip install magidict
+```
+
+## Importing MagiDict
+
+Once installed, you can import it in several ways:
+
+### Import the entire package
+
+```python
+import magidict
+
+# Access the class directly
+md = magidict.MagiDict({'user': {'name': 'Alice'}})
+```
+
+### Import specific classes and helpers
+
+```python
+from magidict import MagiDict, enchant, magi_loads, none
+
+md = MagiDict({'user': {'name': 'Alice'}})
+```
 
 ## Key Features
 
