@@ -1,4 +1,4 @@
-[magicdict_docs.md](https://github.com/user-attachments/files/22863846/magicdict_docs.md)
+[magidict_docs.md](https://github.com/user-attachments/files/22863846/magidict_docs.md)
 # MagiDict
 
 Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>

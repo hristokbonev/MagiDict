@@ -8,14 +8,16 @@ version = "0.1.0"
 description = "A recursive dictionary with safe attribute access and automatic conversion."
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-  {name = "Hristo", email = "chkbonev@gmail.com"}
+  {name = "Hristo Bonev", email = "chkbonev@gmail.com"}
 ]
 keywords = [
   "dictionary",
   "nested dict",
   "magic dict",
+  "magidict",
   "safe access",
   "dot notation",
   "attribute access",
@@ -46,5 +48,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/magicdict"
-Issues = "https://github.com/yourusername/magicdict/issues"
+Homepage = "https://github.com/yourusername/magidict"
+Issues = "https://github.com/yourusername/magidict/issues"
