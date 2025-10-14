@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence, Union
 
 
 _MISSING = object()
@@ -192,10 +192,6 @@ class MagiDict(dict):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def __ior__(self: T, other: Mapping[Any, Any]) -> T:
-        """Support the |= operator."""
-        super().__ior__(other)
-        return self
 
     def pop(self, key, *args):
         """Prevent popping items on MagiDicts created from missing or None keys."""

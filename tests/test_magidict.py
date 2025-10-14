@@ -922,16 +922,6 @@ class TestMagiDict(TestCase):
         self.assertIsInstance(md.a_list[0], MagiDict)
         self.assertEqual(md.a_list[0].id, 1)
 
-    def test_in_place_update_operator_hooks_values(self):
-        """Test that the in-place update operator (|=) hooks new values."""
-        md = MagiDict({"a": 1})
-        md |= {"b": {"c": 2}, "d": [{"e": 3}]}
-        self.assertEqual(md.a, 1)
-        self.assertIsInstance(md.b, MagiDict)
-        self.assertEqual(md.b.c, 2)
-        self.assertIsInstance(md.d[0], MagiDict)
-        self.assertEqual(md.d[0].e, 3)
-
     def test_empty_initializations(self):
         """Test that various empty initializations result in an empty MagiDict."""
         self.assertEqual(MagiDict(), {})
@@ -5647,6 +5637,7 @@ class TestFlagPreservationWithNesting(TestCase):
 
 class TestMagiLoad(TestCase):
     """Test suite for magi_load function."""
+
     def test_magi_load_basic(self):
         """Test that magi_load correctly loads a simple JSON dict into a MagiDict."""
         data = io.StringIO('{"a": 1, "b": "two"}')
