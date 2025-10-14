@@ -1,5 +1,6 @@
 from collections import UserList, namedtuple
 import gc
+import io
 import sys
 import threading
 from typing import OrderedDict
@@ -10,7 +11,7 @@ import pickle
 from types import MappingProxyType
 import json
 import weakref
-from magidict.core import MagiDict, enchant, magi_loads, none
+from magidict.core import MagiDict, enchant, magi_load, magi_loads, none
 
 
 md = MagiDict(
@@ -5516,7 +5517,6 @@ class TestPickleFlagPreservation(TestCase):
 class TestReprWithFlags(TestCase):
     """Test that __repr__ shows flags."""
 
-
     def test_repr_regular_no_flags(self):
         """Test that __repr__ doesn't show flags for regular MagiDict."""
         md = MagiDict({"a": 1})
@@ -5643,3 +5643,85 @@ class TestFlagPreservationWithNesting(TestCase):
 
         self.assertTrue(getattr(none_x, "_from_none", False))
         self.assertTrue(getattr(none_z, "_from_none", False))
+
+
+class TestMagiLoad(TestCase):
+    """Test suite for magi_load function."""
+    def test_magi_load_basic(self):
+        """Test that magi_load correctly loads a simple JSON dict into a MagiDict."""
+        data = io.StringIO('{"a": 1, "b": "two"}')
+        result = magi_load(data)
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(result.a, 1)
+        self.assertEqual(result.b, "two")
+
+    def test_magi_load_nested(self):
+        """Test nested dicts are converted recursively into MagiDicts."""
+        data = io.StringIO('{"outer": {"inner": {"value": 42}}}')
+        result = magi_load(data)
+        self.assertIsInstance(result.outer, MagiDict)
+        self.assertIsInstance(result.outer.inner, MagiDict)
+        self.assertEqual(result.outer.inner.value, 42)
+
+    def test_magi_load_list_of_dicts(self):
+        """Test lists of dicts are properly converted to MagiDicts inside the list."""
+        data = io.StringIO('{"users": [{"name": "Alice"}, {"name": "Bob"}]}')
+        result = magi_load(data)
+        self.assertIsInstance(result.users, list)
+        self.assertIsInstance(result.users[0], MagiDict)
+        self.assertEqual(result.users[1].name, "Bob")
+
+    def test_magi_load_empty(self):
+        """Test loading an empty JSON object."""
+        data = io.StringIO("{}")
+        result = magi_load(data)
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(len(result), 0)
+
+    def test_magi_load_invalid_json(self):
+        """Test magi_load raises JSONDecodeError for invalid JSON."""
+        data = io.StringIO('{"a": 1,}')
+        with self.assertRaises(json.JSONDecodeError):
+            magi_load(data)
+
+    def test_magi_load_with_custom_kwargs(self):
+        """Test magi_load passes kwargs to json.load (e.g., parse_int)."""
+        data = io.StringIO('{"number": 123}')
+        result = magi_load(data, parse_int=lambda x: f"int:{x}")
+        self.assertEqual(result.number, "int:123")
+
+    def test_magi_load_deeply_nested(self):
+        """Test deeply nested structures are properly converted."""
+        nested_json = json.dumps({"level1": {"level2": {"level3": {"key": "value"}}}})
+        data = io.StringIO(nested_json)
+        result = magi_load(data)
+        self.assertEqual(result.level1.level2.level3.key, "value")
+
+    def test_magi_load_preserves_types(self):
+        """Test that non-dict types are preserved."""
+        data = io.StringIO('{"a": [1, 2, 3], "b": true, "c": null}')
+        result = magi_load(data)
+        self.assertEqual(result.a, [1, 2, 3])
+        self.assertIs(result.b, True)
+        self.assertIsInstance(result.c, MagiDict)
+        self.assertTrue(getattr(result.c, "_from_none", False))
+        self.assertEqual(len(result.c), 0)
+
+    def test_magi_load_attribute_and_key_access(self):
+        """Test that both attribute and key access return the same value."""
+        data = io.StringIO('{"name": "Hristo"}')
+        result = magi_load(data)
+        self.assertEqual(result.name, "Hristo")
+        self.assertEqual(result["name"], "Hristo")
+
+    def test_magi_load_mutable_independence(self):
+        """Test that modifying the returned MagiDict doesn't affect the original JSON structure."""
+        json_str = '{"settings": {"theme": "dark"}}'
+        data = io.StringIO(json_str)
+        result = magi_load(data)
+        result.settings.theme = "light"
+        self.assertEqual(result.settings.theme, "light")
+
+        # Confirm it's not referencing the same object (deep copy behavior)
+        reloaded = magi_load(io.StringIO(json_str))
+        self.assertEqual(reloaded.settings.theme, "dark")
