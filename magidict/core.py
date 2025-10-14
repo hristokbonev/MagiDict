@@ -335,6 +335,11 @@ def magi_loads(s: str, **kwargs) -> MagiDict:
     return json.loads(s, object_hook=MagiDict, **kwargs)
 
 
+def magi_load(fp, **kwargs) -> MagiDict:
+    """Deserialize a JSON file-like object into a MagiDict instead of a dict."""
+    return json.load(fp, object_hook=MagiDict, **kwargs)
+
+
 def enchant(d: dict) -> MagiDict:
     """Convert a standard dictionary into a MagiDict."""
     if isinstance(d, MagiDict):

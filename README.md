@@ -2,13 +2,13 @@
   <img src="http://raw.githubusercontent.com/hristokbonev/MagiDict/refs/heads/main/docs/assets/MagiDictLogo.png" alt="MagiDict Logo" width="200">
 </p>
 
-<h1 align="center">✨ MagiDict ✨</h1>
+<h1 align="center">MagiDict</h1>
 
 
-Do you find yourself chaining .get()'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single {}?<br>
-Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except KeyError as e"?<br>
-Do your kids get annoyed with you because you've called them "None" one too many times.<br>
-And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "real_friends"?<br>
+Do you find yourself chaining `.get()`'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single `{}`?<br>
+Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except `KeyError` as e"?<br>
+Do your kids get annoyed with you because you've called them "`None`" one too many times.<br>
+And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "`real_friends`"?<br>
 How often do you seek imaginary guidance from Guido, begging him to teach you the mystical ways of safely navigating nested Python dictionaries?<br>
 When you're out in public, do you constantly have the feeling that Keanu Reeves is judging you from behind the corner for your inability to elegantly access nested dictionary keys?<br>
 And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took that course in JavaScript that your friend gave you a voucher for, before they moved to a different country and you lost contact with them, so you could finally use optional chaining and nullish coalescing operators to safely access nested properties without all the drama?
@@ -19,7 +19,7 @@ But don't worry anymore, because there's finally a solution that doesn't involve
 
 MagiDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with recursive conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
 
-Stop chaining get()'s and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
+Stop chaining `get()`'s and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
 
 ## Table of Contents
 
@@ -290,6 +290,17 @@ json_string = '{"user": {"name": "Alice", "age": 30}}'
 md = magi_loads(json_string)
 md.user.name  # 'Alice'
 ```
+
+### `magi_load(fp, **kwargs)`
+
+Deserializes a JSON file-like object into a `MagiDict` instead of a standard dict.
+
+**Parameters:**
+
+- `fp`: A file-like object containing JSON data
+- `**kwargs`: Additional arguments passed to `json.load()`
+
+**Returns:** A `MagiDict` instance
 
 ### `none(obj)`
 
