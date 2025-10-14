@@ -3,4 +3,4 @@ pytest-benchmark
 box
 dotmap
 addict
-dotdict
+attr-dot-dict
