@@ -106,7 +106,7 @@ md['users.2.name']  # IndexError
 md['users.0.email'] # KeyError
 ```
 
-### 4. List or Tuple of Keys in Brackets
+### 3. List or Tuple of Keys in Brackets
 
 Use a list or tuple of keys for deep sefe access.
 Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value:
@@ -128,7 +128,7 @@ md['users', 0, 'name'] = "Overridden"
 md['users', 0, 'name']  # 'Overridden'
 ```
 
-### 3. Recursive Conversion
+### 4. Recursive Conversion
 
 Nested dictionaries are automatically converted to `MagiDict` instances:
 
@@ -146,7 +146,7 @@ md = MagiDict(data)
 md.company.departments.engineering.employees  # 50
 ```
 
-### 4. Graceful Failure
+### 5. Graceful Failure
 
 Accessing non-existent keys or keys with `None` values via dot notation or tuple/list of keys returns an empty `MagiDict` instead of raising errors:
 
@@ -163,7 +163,7 @@ if md.settings.theme.dark_mode:
     pass
 ```
 
-### 5. Safe None Handling
+### 6. Safe None Handling
 
 Keys with `None` values can be safely chained:
 
@@ -176,11 +176,11 @@ md.user.nickname.stage_name  # MagiDict({})
 md.user['nickname']  # None
 ```
 
-### 6. Standard Dictionary Behavior Preserved
+### 7. Standard Dictionary Behavior Preserved
 
 All standard `dict` methods and behaviors work as expected. For example missing keys with brackets raise KeyError as expected
 
-### 7. Safe `mget()` Method
+### 8. Safe `mget()` Method
 
 `mget` is MagiDict's native `get` method. Unless a custom default is provided, it returns an empty `MagiDict` for missing keys or `None` values:
 
@@ -200,7 +200,7 @@ md.mg('1-invalid')  # 'value'
 md.mget('missing', 'default')  # 'default'
 ```
 
-### 8. Convert Back to Standard Dict
+### 9. Convert Back to Standard Dict
 
 Use `disenchant()` to convert back to a standard Python `dict`:
 
@@ -210,7 +210,7 @@ standard_dict = md.disenchant()
 type(standard_dict)  # <class 'dict'>
 ```
 
-### 9. Convert empty MagiDict to None
+### 10. Convert empty MagiDict to None
 Use `none()` to convert empty MagiDict instances that were created from `None` or missing keys back to `None`:
 
 ```python
