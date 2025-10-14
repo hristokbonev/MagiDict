@@ -194,7 +194,7 @@ class MagiDict(dict):
 
     def __ior__(self, other):
         """Support the |= operator for in-place updates."""
-        self.update(other)
+        super().__ior__(other)
         return self
 
     def pop(self, key, *args):
