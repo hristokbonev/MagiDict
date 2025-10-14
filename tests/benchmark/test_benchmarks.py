@@ -115,6 +115,7 @@ def test_missing_key_dotmap(benchmark, dotmap_obj):
             return dotmap_obj.user.missing.deeply.nested.key
         except (KeyError, AttributeError):
             return None
+
     benchmark(access)
 
 
@@ -196,6 +197,7 @@ def test_update_magi(benchmark, magi):
         m = MagiDict(magi)
         m["user"]["profile"]["age"] = m["user"]["profile"]["age"] + 1
         return m
+
     benchmark(mutate)
 
 
@@ -204,6 +206,7 @@ def test_update_box(benchmark, box_obj):
         b = Box(box_obj)
         b.user.profile.age += 1
         return b
+
     benchmark(mutate)
 
 
@@ -212,6 +215,7 @@ def test_update_dotmap(benchmark, dotmap_obj):
         d = DotMap(dotmap_obj)
         d.user.profile.age += 1
         return d
+
     benchmark(mutate)
 
 
@@ -220,6 +224,7 @@ def test_update_addict(benchmark, addict_obj):
         a = AddictDict(addict_obj)
         a.user.profile.age += 1
         return a
+
     benchmark(mutate)
 
 
@@ -229,6 +234,7 @@ def test_bulk_update_magi(benchmark, magi):
         m = MagiDict(magi)
         m.update({"new_key1": "value1", "new_key2": {"nested": "value2"}})
         return m
+
     benchmark(bulk_update)
 
 
@@ -237,6 +243,7 @@ def test_bulk_update_box(benchmark, box_obj):
         b = Box(box_obj)
         b.update({"new_key1": "value1", "new_key2": {"nested": "value2"}})
         return b
+
     benchmark(bulk_update)
 
 
@@ -264,6 +271,7 @@ def test_list_iteration_magi(benchmark, magi):
         for post in magi.posts:
             total += post.likes
         return total
+
     benchmark(iterate)
 
 
@@ -273,6 +281,7 @@ def test_list_iteration_box(benchmark, box_obj):
         for post in box_obj.posts:
             total += post.likes
         return total
+
     benchmark(iterate)
 
 
@@ -282,6 +291,7 @@ def test_list_iteration_dotmap(benchmark, dotmap_obj):
         for post in dotmap_obj.posts:
             total += post.likes
         return total
+
     benchmark(iterate)
 
 
@@ -291,6 +301,7 @@ def test_list_iteration_addict(benchmark, addict_obj):
         for post in addict_obj.posts:
             total += post.likes
         return total
+
     benchmark(iterate)
 
 
@@ -349,21 +360,25 @@ def test_copy_addict(benchmark, addict_obj):
 # --- Deep Copy Benchmarks ---
 def test_deepcopy_magi(benchmark, magi):
     from copy import deepcopy
+
     benchmark(lambda: deepcopy(magi))
 
 
 def test_deepcopy_box(benchmark, box_obj):
     from copy import deepcopy
+
     benchmark(lambda: deepcopy(box_obj))
 
 
 def test_deepcopy_dotmap(benchmark, dotmap_obj):
     from copy import deepcopy
+
     benchmark(lambda: deepcopy(dotmap_obj))
 
 
 def test_deepcopy_addict(benchmark, addict_obj):
     from copy import deepcopy
+
     benchmark(lambda: deepcopy(addict_obj))
 
 
@@ -420,6 +435,7 @@ def test_setdefault_magi(benchmark, magi):
         m = MagiDict(magi)
         m.setdefault("new_key", {"default": "value"})
         return m
+
     benchmark(setdef)
 
 
@@ -428,6 +444,7 @@ def test_setdefault_box(benchmark, box_obj):
         b = Box(box_obj)
         b.setdefault("new_key", {"default": "value"})
         return b
+
     benchmark(setdef)
 
 
@@ -437,6 +454,7 @@ def test_pop_magi(benchmark, nested_data):
         m = MagiDict(nested_data)
         m.pop("user", None)
         return m
+
     benchmark(pop)
 
 
@@ -445,6 +463,7 @@ def test_pop_box(benchmark, nested_data):
         b = Box(nested_data)
         b.pop("user", None)
         return b
+
     benchmark(pop)
 
 
@@ -475,6 +494,7 @@ def test_sequential_access_magi(benchmark, magi):
         theme = magi.user.settings.theme
         lang = magi.user.settings.language
         return name, age, theme, lang
+
     benchmark(multi_access)
 
 
@@ -485,6 +505,7 @@ def test_sequential_access_box(benchmark, box_obj):
         theme = box_obj.user.settings.theme
         lang = box_obj.user.settings.language
         return name, age, theme, lang
+
     benchmark(multi_access)
 
 
@@ -508,6 +529,7 @@ def test_merge_operator_magi(benchmark, magi):
     def merge():
         m = MagiDict(magi)
         return m | {"extra": {"data": "value"}}
+
     benchmark(merge)
 
 
@@ -515,4 +537,5 @@ def test_merge_operator_regular_dict(benchmark, nested_data):
     def merge():
         d = dict(nested_data)
         return d | {"extra": {"data": "value"}}
+
     benchmark(merge)
