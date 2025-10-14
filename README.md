@@ -2,7 +2,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/magidict.svg?color=informational)](https://pypi.org/project/magidict/)
 [![Build Status](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml/badge.svg)](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/hristokbonev/MagiDict/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/hristokbonev/MagiDict)
-[![Benchmarks](https://img.shields.io/badge/Benchmarks-View%20Results-blueviolet?logo=python&logoColor=white)](https://hristokbonev.github.io/MagiDict/)
+[![Benchmarks](https://img.shields.io/badge/Benchmarks-View%20Results-blueviolet?logo=python&logoColor=white)](https://hristokbonev.github.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
