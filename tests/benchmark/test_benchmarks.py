@@ -245,7 +245,7 @@ def test_update_addict(benchmark, addict_obj):
 def test_update_dotdict(benchmark, dotdict_obj):
     def mutate():
         d = DotDict(dotdict_obj)
-        d.user.profile.age += 1
+        d["user"]["profile"]["age"] += 1
         return d
 
     benchmark(mutate)
