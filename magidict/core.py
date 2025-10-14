@@ -192,8 +192,8 @@ class MagiDict(dict):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def __ior__(self, other):
-        """Support the |= operator for in-place updates."""
+    def __ior__(self: T, other: Mapping[Any, Any]) -> T:
+        """Support the |= operator."""
         super().__ior__(other)
         return self
 
