@@ -1,3 +1,10 @@
+[![PyPI version](https://img.shields.io/pypi/v/magidict.svg?color=blue&label=PyPI)](https://pypi.org/project/magidict/)
+[![Python versions](https://img.shields.io/pypi/pyversions/magidict.svg?color=informational)](https://pypi.org/project/magidict/)
+[![Build Status](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml/badge.svg)](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hristokbonev/MagiDict/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/hristokbonev/MagiDict)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 <p align="center">
   <img src="http://raw.githubusercontent.com/hristokbonev/MagiDict/refs/heads/main/docs/assets/MagiDictLogo.png" alt="MagiDict Logo" width="200">
 </p>
