@@ -192,7 +192,6 @@ class MagiDict(dict):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-
     def pop(self, key, *args):
         """Prevent popping items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
