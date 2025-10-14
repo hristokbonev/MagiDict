@@ -2,6 +2,7 @@ import pytest
 from box import Box
 from dotmap import DotMap
 from addict import Dict as AddictDict
+from dotdict import DotDict
 from magidict import MagiDict, enchant, magi_loads
 import json
 
@@ -59,6 +60,10 @@ def dotmap_obj(nested_data):
 @pytest.fixture(scope="session")
 def addict_obj(nested_data):
     return AddictDict(nested_data)
+
+@pytest.fixture(scope="session")
+def dotdict_obj(nested_data):
+    return DotDict(nested_data)
 
 
 # --- Basic Access Benchmarks ---
@@ -153,6 +158,10 @@ def test_init_addict(benchmark, nested_data):
     benchmark(lambda: AddictDict(nested_data))
 
 
+def test_init_dotdict(benchmark, nested_data):
+    benchmark(lambda: DotDict(nested_data))
+
+
 def test_init_regular_dict(benchmark, nested_data):
     benchmark(lambda: dict(nested_data))
 
@@ -173,6 +182,9 @@ def test_init_deep_dotmap(benchmark, deep_nested_data):
 def test_init_deep_addict(benchmark, deep_nested_data):
     benchmark(lambda: AddictDict(deep_nested_data))
 
+def test_init_deep_dotdict(benchmark, deep_nested_data):
+    benchmark(lambda: DotDict(deep_nested_data))
+
 
 # --- Wide Structure Benchmarks ---
 def test_init_wide_magi(benchmark, wide_data):
@@ -189,6 +201,9 @@ def test_init_wide_dotmap(benchmark, wide_data):
 
 def test_init_wide_addict(benchmark, wide_data):
     benchmark(lambda: AddictDict(wide_data))
+
+def test_init_wide_dotdict(benchmark, wide_data):
+    benchmark(lambda: DotDict(wide_data))
 
 
 # --- Update Benchmarks ---
@@ -224,6 +239,14 @@ def test_update_addict(benchmark, addict_obj):
         a = AddictDict(addict_obj)
         a.user.profile.age += 1
         return a
+
+    benchmark(mutate)
+
+def test_update_dotdict(benchmark, dotdict_obj):
+    def mutate():
+        d = DotDict(dotdict_obj)
+        d.user.profile.age += 1
+        return d
 
     benchmark(mutate)
 
