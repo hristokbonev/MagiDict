@@ -77,17 +77,20 @@ md = MagiDict({'user': {'name': 'Alice'}})
 
 ### 1. Attribute-Style Access
 
-Access dictionary keys using dot notation instead of bracket notation:
+Access dictionary keys using dot notation instead of bracket notation. Missing keys and keys with `None` values return an empty `MagiDict`:
 
 ```python
-md = MagiDict({'user': {'name': 'Alice', 'age': 30}})
+md = MagiDict({'user': {'name': 'Alice', 'age': 30, 'nickname': None}})
 md.user.name # 'Alice'
 md.user.age  # 30
+md.user.nickname # MagiDict({})
+md.user.email # MagiDict({})
 ```
 
 ### 2. Dot Notation in Brackets
 
-Use dot-separated strings for deep access, including list indices:
+Use dot-separated strings for deep access, including list indices.
+Missing keys raise `KeyError` and out-of-bounds indices raise `IndexError` as expected from standard dict/list behavior:
 
 ```python
 md = MagiDict({
@@ -99,6 +102,30 @@ md = MagiDict({
 
 md['users.0.name']  # 'Alice'
 md['users.1.id']    # 2
+md['users.2.name']  # IndexError
+md['users.0.email'] # KeyError
+```
+
+### 4. List or Tuple of Keys in Brackets
+
+Use a list or tuple of keys for deep sefe access.
+Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value:
+
+```python
+md = MagiDict({
+    'users': [
+        {'name': 'Alice', 'id': 1},
+        {'name': 'Keanu', 'id': 2}
+    ]
+})
+md['users', 0, 'name']  # 'Alice'
+md['users', 1, 'id']    # 2
+md['users', 2, 'name']  # MagiDict({})
+md['users', 0, 'email'] # MagiDict({})
+
+md['users', 0, 'name'] = "Overridden"
+# It returns the the actual tuple key value
+md['users', 0, 'name']  # 'Overridden'
 ```
 
 ### 3. Recursive Conversion
@@ -121,13 +148,14 @@ md.company.departments.engineering.employees  # 50
 
 ### 4. Graceful Failure
 
-Accessing non-existent keys returns an empty `MagiDict` instead of raising errors:
+Accessing non-existent keys or keys with `None` values via dot notation or tuple/list of keys returns an empty `MagiDict` instead of raising errors:
 
 ```python
 md = MagiDict({'user': {'name': 'Alice'}})
 
 # No error, returns empty MagiDict
 md.user.email.address.street # MagiDict({})
+md["user", "email", "address", "street"] # MagiDict({})
 
 # Safe chaining
 if md.settings.theme.dark_mode:
@@ -477,7 +505,7 @@ regular = md.disenchant()
 
 ### Performance
 
-[Benchmarks](https://hristokbonev.github.io/)
+[Benchmarks](https://hristokbonev.github.io/magidict/)
 
 ### Best Practices
 
@@ -545,6 +573,7 @@ email = md['user.email'] #KeyError
 
 # This is safe
 email = md.user.email or 'no-email'
+email = md['user', 'email'] or 'no-email'
 ```
 
 ### Cannot Modify Error

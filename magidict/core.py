@@ -74,7 +74,40 @@ class MagiDict(dict):
         return item
 
     def __getitem__(self, keys):
-        """Support dot notation for nested keys in addition to standard dict access."""
+        """
+        - Supports standard dict key access.
+        - Supports list/tuple of keys for nested forgiving access.
+        - Supporsts string keys with dots for nested unforgiving access.
+        """
+        if isinstance(keys, tuple):
+            if keys in self:
+                return super().__getitem__(keys)
+        if isinstance(keys, (list, tuple)):
+            obj = self
+            for key in keys:
+                if isinstance(obj, Mapping):
+                    if key in obj:
+                        obj = obj[key]
+                    else:
+                        md = MagiDict()
+                        object.__setattr__(md, "_from_missing", True)
+                        return md
+                elif isinstance(obj, Sequence) and not isinstance(obj, (str, bytes)):
+                    try:
+                        obj = obj[int(key)]
+                    except (ValueError, IndexError, TypeError):
+                        md = MagiDict()
+                        object.__setattr__(md, "_from_missing", True)
+                        return md
+                else:
+                    md = MagiDict()
+                    object.__setattr__(md, "_from_missing", True)
+                    return md
+            if obj is None:
+                md = MagiDict()
+                object.__setattr__(md, "_from_none", True)
+                return md
+            return obj
         try:
             return super().__getitem__(keys)
         except KeyError:
