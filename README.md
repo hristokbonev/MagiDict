@@ -474,7 +474,9 @@ regular = md.disenchant()
 - Deep nesting with recursion limits and stack overflow prevention
 - Type preservation through operations
 
+### Performance
 
+[Benchmarks](https://hristokbonev.github.io/)
 
 ### Best Practices
 
