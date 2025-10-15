@@ -957,6 +957,13 @@ class TestMagiDict(TestCase):
         md = MagiDict(big)
         self.assertEqual(md.key500.nested, 500)
 
+    def test_equality_with_plain_dict(self):
+        """Test that MagiDict compares equal to a plain dict with the same content."""
+        d = {"a": 1, "b": {"c": 2}}
+        md = MagiDict(d)
+        self.assertEqual(md, d)
+        self.assertEqual(d, md)
+
     def test_overwrite_with_none(self):
         """Setting a key to None and then accessing its attributes should return MagiDict."""
         md = MagiDict({"a": {"b": 1}})
