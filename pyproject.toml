@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "magidict"
-version = "0.1.2"
+version = "0.1.3"
 description = "A recursive dictionary with safe attribute access and automatic conversion."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -47,5 +47,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/magidict"
-Issues = "https://github.com/yourusername/magidict/issues"
+Homepage = "https://github.com/hristokbonev/magidict"
+Issues = "https://github.com/hristokbonev/magidict/issues"

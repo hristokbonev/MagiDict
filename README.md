@@ -30,17 +30,6 @@ MagiDict is a powerful Python dictionary subclass that provides simple, safe and
 
 Stop chaining `get()`'s and brackets like it's 2003 and start living your best life, where `Dicts.Just.Work`!
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Installation](#installation)
-- [Key Features](#key-features)
-- [API Reference](#api-reference)
-- [Utility Functions](#utility-functions)
-- [Important Caveats](#important-caveats)
-- [Advanced Features](#advanced-features)
-- [Performance Considerations](#performance-considerations)
-
 ## Overview
 
 `MagiDict` extends Python's built-in `dict` to offer a more convenient and forgiving way to work with nested dictionaries. It's particularly useful when working with JSON data, API responses, configuration files, or any deeply nested data structures where safe navigation is important.
