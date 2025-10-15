@@ -1,3 +1,4 @@
+[![GitHub Repo](https://img.shields.io/badge/GitHub-MagiDict-181717?logo=github)](https://github.com/hristokbonev/MagiDict)
 [![PyPI version](https://img.shields.io/pypi/v/magidict.svg?color=blue&label=PyPI)](https://pypi.org/project/magidict/)
 [![Python versions](https://img.shields.io/pypi/pyversions/magidict.svg?color=informational)](https://pypi.org/project/magidict/)
 [![Build Status](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml/badge.svg)](https://github.com/hristokbonev/MagiDict/actions/workflows/ci.yml)
@@ -52,26 +53,36 @@ You can install MagiDict via pip:
 pip install magidict
 ```
 
-## Importing MagiDict
-
-Once installed, you can import it in several ways:
-
-### Import the entire package
-
+## Quick Start
 ```python
-import magidict
+from magidict import MagiDict
 
-# Access the class directly
-md = magidict.MagiDict({'user': {'name': 'Alice'}})
+# Create from dict
+md = MagiDict({
+    'user': {
+        'name': 'Alice',
+        'profile': {
+            'bio': 'Software Engineer',
+            'location': 'NYC'
+        }
+    }
+})
+
+# Dot notation access
+print(md.user.name)  # 'Alice'
+print(md.user.profile.bio)  # 'Software Engineer'
+
+# Safe chaining - no errors!
+print(md.user.settings.theme)  # MagiDict({}) - not a KeyError!
+print(md.user.email or 'no-email')  # 'no-email'
+
+# Works with None values too
+md = MagiDict({'value': None})
+print(md.value.nested.key)  # MagiDict({}) - safe!
 ```
 
-### Import specific classes and helpers
-
-```python
-from magidict import MagiDict, enchant, magi_loads, none
-
-md = MagiDict({'user': {'name': 'Alice'}})
-```
+## Documentation
+Full documentation available in the GitHub [Wiki](https://github.com/hristokbonev/MagiDict/wiki)
 
 ## Key Features
 
@@ -596,8 +607,12 @@ md['value']  # None
 ```
 
 ## License
-MagiDict is licensed under the MIT License. See the LICENSE file for details.
+MagiDict is licensed under the [MIT License](https://github.com/hristokbonev/MagiDict/blob/main/LICENSE).
 
 ## Links
-For documentation and source code, visit the project on GitHub:
-[https://github.com/hristokbonev/MagiDict](https://github.com/hristokbonev/MagiDict)
+For documentation and source code, visit the project on GitHub: <br>
+Documentation: [GitHub Wiki](https://github.com/hristokbonev/MagiDict/wiki)<br>
+PyPI: [magidict](https://pypi.org/project/magidict/)<br>
+Source Code: [MagiDict](https://github.com/hristokbonev/MagiDict)<br>
+Issue Tracker: [GitHub Issues](https://github.com/hristokbonev/MagiDict/issues)<br>
+Benchmarks: [Performance Results](https://hristokbonev.github.io/magidict/)
