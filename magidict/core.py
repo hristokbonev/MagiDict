@@ -300,6 +300,24 @@ class MagiDict(dict):
         """
         return self.mget(key, default)
 
+    def strict_get(self, key):
+        """
+        Strict get method that mimics standard dict access.
+        """
+        return super().__getitem__(key)
+    
+    def sget(self, key):
+        """
+        Shorthand for strict_get() method.
+        """
+        return self.strict_get(key)
+
+    def sg(self, key):
+        """
+        Shorthand for strict_get() method.
+        """
+        return self.strict_get(key)
+
     def disenchant(self):
         """
         Convert MagiDict and all nested MagiDicts back into standard dicts,

@@ -6,13 +6,11 @@
 [![Benchmarks](https://img.shields.io/badge/Benchmarks-View%20Results-blueviolet?logo=python&logoColor=white)](https://hristokbonev.github.io/magidict/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-
 <p align="center">
   <img src="http://raw.githubusercontent.com/hristokbonev/MagiDict/refs/heads/main/docs/assets/MagiDictLogo.png" alt="MagiDict Logo" width="200">
 </p>
 
 <h1 align="center">MagiDict</h1>
-
 
 Do you find yourself chaining `.get()`'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single `{}`?<br>
 Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except `KeyError` as e"?<br>
@@ -24,7 +22,6 @@ And when you go to sleep at night, do you lie awake thinking about how much bett
 
 If you answered "yes" to any of these questions, you're not alone!
 But don't worry anymore, because there's finally a solution that doesn't involve learning a whole new programming language or changing your religion to JavaScript! It's called ✨MagiDict✨ and it's here to save your sanity!
-
 
 MagiDict is a powerful Python dictionary subclass that provides simple, safe and convenient attribute-style access to nested data structures, with recursive conversion and graceful failure handling. Designed to ease working with complex, deeply nested dictionaries, it reduces errors and improves code readability. Optimized and memoized for better performance.
 
@@ -43,6 +40,7 @@ pip install magidict
 ```
 
 ## Quick Start
+
 ```python
 from magidict import MagiDict
 
@@ -71,6 +69,7 @@ print(md.value.nested.key)  # MagiDict({}) - safe!
 ```
 
 ## Documentation
+
 Full documentation available in the GitHub [Wiki](https://github.com/hristokbonev/MagiDict/wiki)
 
 ## Key Features
@@ -109,7 +108,7 @@ md['users.0.email'] # KeyError
 ### 3. List or Tuple of Keys in Brackets
 
 Use a list or tuple of keys for deep sefe access.
-Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value:
+Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value. The caveat of this is that you cannot strictly access tuple keys that don't exist, as it will return an empty MagiDict instead of raising KeyError. For that, use the strict `strict_get()` method.
 
 ```python
 md = MagiDict({
@@ -200,7 +199,24 @@ md.mg('1-invalid')  # 'value'
 md.mget('missing', 'default')  # 'default'
 ```
 
-### 9. Convert Back to Standard Dict
+### 9. Strict strict_get() Method
+
+`strict_get` is a strict version of `mget` that behaves like standard `dict` bracket access, raising `KeyError` for missing keys and returning `None` for keys with `None` values.
+The main usage is to strictly access tuple keys, where if they don't exist, it raises a KeyError, instead of returning an empty MagiDict.
+
+```python
+md = MagiDict({'user': {'name': 'Alice', ('tuple', 'key'): 'value'}, 'valid': None})
+# Raises KeyError for missing keys
+md.sg('missing')  # KeyError
+md.sg('valid')    # None
+# Raises KeyError for missing nested keys
+md.sg('user').sg('email')  # KeyError
+# Raises KeyError for missing tuple keys
+md.sg(('tuple', 'missing'))  # KeyError
+md.sg(('tuple', 'key'))      # 'value'
+```
+
+### 10. Convert Back to Standard Dict
 
 Use `disenchant()` to convert back to a standard Python `dict`:
 
@@ -210,7 +226,8 @@ standard_dict = md.disenchant()
 type(standard_dict)  # <class 'dict'>
 ```
 
-### 10. Convert empty MagiDict to None
+### 11. Convert empty MagiDict to None
+
 Use `none()` to convert empty MagiDict instances that were created from `None` or missing keys back to `None`:
 
 ```python
@@ -235,7 +252,9 @@ Creates a new `MagiDict` instance. Accepts the same arguments as the built-in `d
 ```python
 MagiDict(*args, **kwargs)
 ```
+
 or
+
 ```python
 d = {"key": "value"}
 
@@ -262,6 +281,23 @@ Safe get method that mimics `dict`'s `get()`, but returns an empty `MagiDict` fo
 #### `mg(key, default=...)`
 
 Shorthand alias for `mget()`.
+
+#### `strict_get(key)`
+
+Strict get method that raises `KeyError` for missing keys and returns `None` for keys with `None` values, mimicking standard `dict` bracket access behavior.
+
+**Parameters:**
+
+- `key`: The key to retrieve
+
+**Returns:**
+
+- The value if key exists (including `None`)
+- Raises `KeyError` if key doesn't exist
+
+#### `sg(key)` and `sget(key)`
+
+Shorthand aliasese for `strict_get()`.
 
 #### `disenchant()`
 
@@ -425,6 +461,7 @@ md["missing"]["key"] = 'value'  # TypeError
 This protection prevents silent bugs where you might accidentally try to modify a non-existent path.
 
 ### 5. Setting attributes
+
 Setting or updating keys using dot notation is not supported. Use bracket notation instead. As with standard dicts, this is purposely restricted to avoid confusion and potential bugs.
 
 ```python
@@ -435,6 +472,17 @@ md.user.age = 30      # AttributeError
 # Use bracket notation instead
 md['user']['name'] = 'Keanu'
 md['user']['age'] = 30
+```
+
+### 6. Accessing Tuple Keys
+
+When accessing tuple keys, if the tuple does not exist as a key in the dictionary, it will return an empty `MagiDict` instead of raising a `KeyError`. To strictly access tuple keys and raise `KeyError` if they don't exist, use the `strict_get()` method.
+
+```python
+md = MagiDict({('tuple', 'key'): 'value'})
+md[('tuple', 'key')]      # 'value'
+md[('tuple', 'missing')]  # MagiDict({}) - does not raise KeyError
+md.sg(('tuple', 'missing'))  # KeyError - raises KeyError
 ```
 
 ## Advanced Features
@@ -496,6 +544,7 @@ regular = md.disenchant()
 ## Performance Considerations
 
 ### Tested:
+
 - All standard and custom functionality
 - Circular and self references through pickle/deepcopy/disenchant
 - Concurrent access patterns (multi-threaded reads/writes)
@@ -595,10 +644,20 @@ md.value  # MagiDict({})
 md['value']  # None
 ```
 
+### Empty MagiDict on Missing Tuple Key
+
+```python
+md = MagiDict({('tuple', 'key'): 'value'})
+md[('tuple', 'missing')]  # MagiDict({}) - does not raise KeyError
+md.sg(('tuple', 'missing'))  # KeyError - raises KeyError
+```
+
 ## License
+
 MagiDict is licensed under the [MIT License](https://github.com/hristokbonev/MagiDict/blob/main/LICENSE).
 
 ## Links
+
 For documentation and source code, visit the project on GitHub: <br>
 Documentation: [GitHub Wiki](https://github.com/hristokbonev/MagiDict/wiki)<br>
 PyPI: [magidict](https://pypi.org/project/magidict/)<br>
