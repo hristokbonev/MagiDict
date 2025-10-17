@@ -611,7 +611,7 @@ MagiDict provides additional features:
 - Protected empty instances
 - Circular reference handling
 - Memoization
-- Type preservation
+- Type preservation for all non-dict values
 - In-place mutation
 
 ## Troubleshooting
