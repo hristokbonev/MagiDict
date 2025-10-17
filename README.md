@@ -599,16 +599,20 @@ md = MagiDict({'user': {'profile': {'name': 'Alice'}}})
 name = md.user.profile.name or 'Unknown'
 ```
 
-### vs. DotDict/AttrDict Libraries
+### vs. DotDict, Bunch, AttrDict and Similar Libraries
 
 MagiDict provides additional features:
 
 - Safe chaining with missing keys (returns empty MagiDict)
 - Safe chaining with None values
 - Dot notation in bracket access
-- Built-in `mget()` for safe access
+- List/tuple of keys in bracket access with safe chaining
+- Built-in `mget()` and `strict_get()` methods
 - Protected empty instances
 - Circular reference handling
+- Memoization
+- Type preservation
+- In-place mutation
 
 ## Troubleshooting
 
