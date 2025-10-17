@@ -88,24 +88,14 @@ class MagiDict(dict):
                     if key in obj:
                         obj = obj[key]
                     else:
-                        md = MagiDict()
-                        object.__setattr__(md, "_from_missing", True)
-                        return md
+                        return None
                 elif isinstance(obj, Sequence) and not isinstance(obj, (str, bytes)):
                     try:
                         obj = obj[int(key)]
                     except (ValueError, IndexError, TypeError):
-                        md = MagiDict()
-                        object.__setattr__(md, "_from_missing", True)
-                        return md
+                        return None
                 else:
-                    md = MagiDict()
-                    object.__setattr__(md, "_from_missing", True)
-                    return md
-            if obj is None:
-                md = MagiDict()
-                object.__setattr__(md, "_from_none", True)
-                return md
+                    return None
             return obj
         try:
             return super().__getitem__(keys)
