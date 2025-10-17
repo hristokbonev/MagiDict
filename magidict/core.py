@@ -82,7 +82,9 @@ class MagiDict(dict):
         if isinstance(keys, tuple):
             if keys in self:
                 return super().__getitem__(keys)
-        if isinstance(keys, (list, tuple)):
+            else:
+                keys = list(keys)
+        if isinstance(keys, (list)):
             obj = self
             for key in keys:
                 if isinstance(obj, Mapping):
@@ -305,7 +307,7 @@ class MagiDict(dict):
         Strict get method that mimics standard dict access.
         """
         return super().__getitem__(key)
-    
+
     def sget(self, key):
         """
         Shorthand for strict_get() method.
