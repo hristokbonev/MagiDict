@@ -79,10 +79,9 @@ class MagiDict(dict):
         - Supports list/tuple of keys for nested forgiving access.
         - Supporsts string keys with dots for nested unforgiving access.
         """
-        if isinstance(keys, tuple):
-            if keys in self:
-                return super().__getitem__(keys)
         if isinstance(keys, (list, tuple)):
+            if isinstance(keys, tuple) and keys in self:
+                return super().__getitem__(keys)
             obj = self
             for key in keys:
                 if isinstance(obj, Mapping):
