@@ -6256,3 +6256,157 @@ class TestMixedAccessPatterns(TestCase):
         self.assertTrue(getattr(md["a", "b", "e"], "_from_missing", False))
         self.assertEqual(md["x", "y"], MagiDict())
         self.assertTrue(getattr(md["x", "y"], "_from_none", False))
+
+
+class TestStrictGet(TestCase):
+    """Test suite for MagiDict.strict_get() method."""
+
+    def test_strict_get_existing_key(self):
+        """Test strict_get returns the value for an existing key."""
+        md = MagiDict({"name": "Alice", "age": 30})
+        self.assertEqual(md.strict_get("name"), "Alice")
+        self.assertEqual(md.strict_get("age"), 30)
+
+    def test_strict_get_nested_dict(self):
+        """Test strict_get returns nested MagiDict for existing nested key."""
+        md = MagiDict({"user": {"name": "Bob", "email": "bob@example.com"}})
+        result = md.strict_get("user")
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(result["name"], "Bob")
+        self.assertEqual(result["email"], "bob@example.com")
+
+    def test_strict_get_none_value(self):
+        """Test strict_get returns None value without converting to empty MagiDict."""
+        md = MagiDict({"value": None})
+        result = md.strict_get("value")
+        self.assertIsNone(result)
+
+    def test_strict_get_missing_key_raises_keyerror(self):
+        """Test strict_get raises KeyError for missing keys."""
+        md = MagiDict({"name": "Charlie"})
+        with self.assertRaises(KeyError):
+            md.strict_get("missing_key")
+
+    def test_strict_get_empty_dict(self):
+        """Test strict_get on empty MagiDict raises KeyError."""
+        md = MagiDict()
+        with self.assertRaises(KeyError):
+            md.strict_get("any_key")
+
+    def test_strict_get_numeric_key(self):
+        """Test strict_get works with numeric keys."""
+        md = MagiDict({1: "one", 2: "two", 3: "three"})
+        self.assertEqual(md.strict_get(1), "one")
+        self.assertEqual(md.strict_get(2), "two")
+
+    def test_strict_get_list_value(self):
+        """Test strict_get returns list values correctly."""
+        md = MagiDict({"items": [1, 2, 3]})
+        result = md.strict_get("items")
+        self.assertEqual(result, [1, 2, 3])
+        self.assertIsInstance(result, list)
+
+    def test_strict_get_tuple_key(self):
+        """Test strict_get works when tuple is used as a key."""
+        md = MagiDict({("a", "b"): "value"})
+        self.assertEqual(md.strict_get(("a", "b")), "value")
+
+    def test_strict_get_vs_getattr(self):
+        """Test that strict_get differs from attribute access for missing keys."""
+        md = MagiDict({"name": "David"})
+
+        # strict_get raises KeyError
+        with self.assertRaises(KeyError):
+            md.strict_get("missing")
+
+        # Attribute access returns empty MagiDict
+        result = md.missing
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(len(result), 0)
+        self.assertTrue(getattr(result, "_from_missing", False))
+
+    def test_strict_get_vs_mget(self):
+        """Test that strict_get differs from mget for missing keys."""
+        md = MagiDict({"key": "value"})
+
+        # strict_get raises KeyError
+        with self.assertRaises(KeyError):
+            md.strict_get("missing")
+
+        # mget returns empty MagiDict with _from_missing flag
+        result = md.mget("missing")
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(len(result), 0)
+        self.assertTrue(getattr(result, "_from_missing", False))
+
+    def test_strict_get_with_none_default(self):
+        """Test strict_get doesn't accept default parameter (unlike dict.get)."""
+        md = MagiDict({"name": "Eve"})
+        # strict_get doesn't have default parameter, so it should raise KeyError
+        with self.assertRaises(KeyError):
+            md.strict_get("missing")
+
+    def test_strict_get_zero_value(self):
+        """Test strict_get returns falsy values like 0 correctly."""
+        md = MagiDict({"count": 0, "empty_string": "", "false": False})
+        self.assertEqual(md.strict_get("count"), 0)
+        self.assertEqual(md.strict_get("empty_string"), "")
+        self.assertFalse(md.strict_get("false"))
+
+    def test_strict_get_complex_nested_structure(self):
+        """Test strict_get on complex nested structures."""
+        md = MagiDict(
+            {
+                "data": {
+                    "users": [{"id": 1, "name": "User1"}, {"id": 2, "name": "User2"}]
+                }
+            }
+        )
+        result = md.strict_get("data")
+        self.assertIsInstance(result, MagiDict)
+        self.assertIsInstance(result["users"], list)
+        self.assertIsInstance(result["users"][0], MagiDict)
+        self.assertEqual(result["users"][0]["name"], "User1")
+
+    def test_sget_shorthand(self):
+        """Test sget shorthand method works the same as strict_get."""
+        md = MagiDict({"key": "value"})
+        self.assertEqual(md.sget("key"), "value")
+        with self.assertRaises(KeyError):
+            md.sget("missing")
+
+    def test_sg_shorthand(self):
+        """Test sg shorthand method works the same as strict_get."""
+        md = MagiDict({"key": "value"})
+        self.assertEqual(md.sg("key"), "value")
+        with self.assertRaises(KeyError):
+            md.sg("missing")
+
+    def test_strict_get_on_protected_magidict(self):
+        """Test strict_get works on protected MagiDicts (those from None/missing)."""
+        md = MagiDict({"data": None})
+        protected = md.data  # Returns protected MagiDict with _from_none
+
+        # strict_get should still work, even if the dict is protected
+        # (we're reading, not modifying)
+        self.assertIsInstance(protected, MagiDict)
+        self.assertTrue(getattr(protected, "_from_none", False))
+
+    def test_strict_get_string_key(self):
+        """Test strict_get with string keys of various formats."""
+        md = MagiDict(
+            {"simple": "value", "with space": "value2", "with-dash": "value3"}
+        )
+        self.assertEqual(md.strict_get("simple"), "value")
+        self.assertEqual(md.strict_get("with space"), "value2")
+        self.assertEqual(md.strict_get("with-dash"), "value3")
+
+    def test_strict_get_returns_exact_value(self):
+        """Test strict_get returns the exact value without transformation."""
+        original_dict = {"nested": {"key": "value"}}
+        md = MagiDict(original_dict)
+        result = md.strict_get("nested")
+
+        # Result should be a MagiDict (converted during initialization)
+        self.assertIsInstance(result, MagiDict)
+        self.assertEqual(result["key"], "value")
