@@ -82,9 +82,7 @@ class MagiDict(dict):
         if isinstance(keys, tuple):
             if keys in self:
                 return super().__getitem__(keys)
-            else:
-                keys = list(keys)
-        if isinstance(keys, (list)):
+        if isinstance(keys, (list, tuple)):
             obj = self
             for key in keys:
                 if isinstance(obj, Mapping):
