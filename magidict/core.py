@@ -330,7 +330,7 @@ class MagiDict(dict):
                 return memo[item_id]
 
             if isinstance(item, MagiDict):
-                new_dict = {}
+                new_dict: dict = {}
                 memo[item_id] = new_dict
                 for k, v in item.items():
                     new_dict[k] = _disenchant_recursive(v)
@@ -352,7 +352,7 @@ class MagiDict(dict):
                 return tuple(_disenchant_recursive(elem) for elem in item)
 
             elif isinstance(item, MutableSequence) and not isinstance(item, (str, bytes)):
-                new_list = []
+                new_list: list = []
                 memo[item_id] = new_list
                 for elem in item:
                     new_list.append(_disenchant_recursive(elem))
