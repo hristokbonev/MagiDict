@@ -69,6 +69,8 @@ class MagiDict(dict):
                     item[i] = cls._hook_with_memo(elem, memo)
                 return item
             except TypeError:
+                if isinstance(item, list):
+                    return [cls._hook_with_memo(elem, memo) for elem in item]
                 try:
                     return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
                 except TypeError:
