@@ -28,7 +28,7 @@ try:
     from .core import magi_loads, magi_load, enchant, none
 except ImportError:
 
-    def magi_loads(s: Any, **kwargs: Any) -> MagiDict:
+    def magi_loads(s: str, **kwargs: Any) -> MagiDict:
         """Fallback magi_loads - requires core module"""
         raise ImportError("magi_loads requires the core module to be available")
 
