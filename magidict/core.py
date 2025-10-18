@@ -62,19 +62,14 @@ class MagiDict(dict):
                 return type(item)(*hooked_values)
             return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
 
-        if isinstance(item, MutableSequence) and not isinstance(item, (str, bytes)):
+        if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
             try:
                 memo[item_id] = item
                 for i, elem in enumerate(item):
                     item[i] = cls._hook_with_memo(elem, memo)
                 return item
             except TypeError:
-                if isinstance(item, list):
-                    return [cls._hook_with_memo(elem, memo) for elem in item]
-                try:
-                    return type(item)(cls._hook_with_memo(elem, memo) for elem in item) # type: ignore[call-arg]
-                except TypeError:
-                    return list(cls._hook_with_memo(elem, memo) for elem in item)
+                return type(item)(cls._hook_with_memo(elem, memo) for elem in item)  # type: ignore[call-arg]
 
         return item
 
@@ -356,17 +351,18 @@ class MagiDict(dict):
                     return type(item)(*disenchanted_values)
                 return tuple(_disenchant_recursive(elem) for elem in item)
 
-            elif isinstance(item, MutableSequence) and not isinstance(item, (str, bytes)):
-                new_list: list = []
+            elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+                new_list = []
                 memo[item_id] = new_list
                 for elem in item:
                     new_list.append(_disenchant_recursive(elem))
-                if isinstance(item, list):
-                    return new_list
-                try:
-                    return type(item)(new_list) # type: ignore[call-arg]
-                except TypeError:
-                    return new_list
+
+                if not isinstance(item, list):
+                    try:
+                        return type(item)(new_list)  # type: ignore[call-arg]
+                    except TypeError:
+                        return new_list
+                return new_list
 
             elif isinstance(item, (set, frozenset)):
 
