@@ -1,4 +1,57 @@
-from .core import MagiDict, magi_loads, enchant, none
+"""Top-level package for magidict.
 
-__all__ = ["MagiDict", "magi_loads", "enchant", "none"]
-__version__ = "0.1.0"
+This module prefers to import a compiled C extension `_magidict` when
+available for performance. If not built, it falls back to the pure-Python
+implementation in :mod:`.core`.
+"""
+
+import sys
+import warnings
+
+try:
+    from ._magidict import MagiDict
+
+    _using_c_extension = True
+except ImportError:
+    try:
+        from .core import MagiDict
+
+        _using_c_extension = False
+    except ImportError as e:
+        raise ImportError(
+            "Could not import MagiDict from either C extension or pure Python implementation. "
+            "Please ensure the package is properly installed."
+        ) from e
+
+try:
+    from .core import magi_loads, magi_load, enchant, none
+except ImportError:
+
+    def magi_loads(s, **kwargs):
+        """Fallback magi_loads - requires core module"""
+        raise ImportError("magi_loads requires the core module to be available")
+
+    def magi_load(fp, **kwargs):
+        """Fallback magi_load - requires core module"""
+        raise ImportError("magi_load requires the core module to be available")
+
+    def enchant(d):
+        """Fallback enchant - requires core module"""
+        raise ImportError("enchant requires the core module to be available")
+
+    def none(obj):
+        """Fallback none - requires core module"""
+        raise ImportError("none requires the core module to be available")
+
+
+__all__ = [
+    "MagiDict",
+    "magi_loads",
+    "magi_load",
+    "enchant",
+    "none",
+]
+
+__version__ = "0.1.4"
+
+__implementation__ = "C extension" if _using_c_extension else "Pure Python"
