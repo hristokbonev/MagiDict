@@ -12,7 +12,7 @@ class MagiDict(dict):
     keys and keys with None values by returning empty MagiDicts, allowing for
     safe chaining of attribute accesses."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Union[dict, Mapping], **kwargs: Any) -> None:
         """Initialize the MagiDict, recursively converting nested dicts.
         Supports initialization with a single dict, mapping, or standard dict args/kwargs.
         """
@@ -27,12 +27,12 @@ class MagiDict(dict):
             super().__setitem__(k, self._hook_with_memo(v, memo))
 
     @classmethod
-    def _hook(cls, item):
+    def _hook(cls, item: Any) -> Any:
         """Recursively converts dictionaries in collections to MagiDicts."""
         return cls._hook_with_memo(item, {})
 
     @classmethod
-    def _hook_with_memo(cls, item, memo):
+    def _hook_with_memo(cls, item: Any, memo: dict[int, Any]) -> Any:
         """Recursively converts dictionaries in collections to MagiDicts.
         Uses a memoization dict to handle circular references."""
         item_id = id(item)
@@ -73,7 +73,7 @@ class MagiDict(dict):
 
         return item
 
-    def __getitem__(self, keys):
+    def __getitem__(self, keys: Union[Any, Iterable[Any]]) -> Any:
         """
         - Supports standard dict key access.
         - Supports list/tuple of keys for nested forgiving access.
@@ -125,7 +125,7 @@ class MagiDict(dict):
                 return obj
             raise
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         """Enables attribute-style access. Returns a safe, empty MagiDict
         for missing keys or keys with a value of None."""
         # Check for special flag attributes first
@@ -180,7 +180,7 @@ class MagiDict(dict):
 
         return new_copy
 
-    def setdefault(self, key, default=None):
+    def setdefault(self, key: Any, default: Any = None) -> Any:
         """Overrides dict.setdefault to ensure the default value is hooked."""
         self._raise_if_protected()
         return super().setdefault(key, self._hook(default))
@@ -207,7 +207,7 @@ class MagiDict(dict):
                     ordered.append(attr)
         return ordered
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: dict) -> "MagiDict":
         """Support deep copy of MagiDict, handling circular references."""
         copied = MagiDict()
         memo[id(self)] = copied
@@ -224,7 +224,7 @@ class MagiDict(dict):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def pop(self, key, *args):
+    def pop(self, key: Any, *args: Any) -> Any:
         """Prevent popping items on MagiDicts created from missing or None keys."""
         self._raise_if_protected()
         return super().pop(key, *args)
@@ -268,7 +268,7 @@ class MagiDict(dict):
         for k, v in state.get("data", {}).items():
             dict.__setitem__(self, k, self._hook(v))
 
-    def mget(self, key, default=_MISSING):
+    def mget(self, key: Any, default: Any = _MISSING) -> Any:
         """
         Safe get method that mimics attribute-style access.
         If the key doesn't exist, returns an empty MagiDict instead of raising KeyError.
@@ -293,31 +293,31 @@ class MagiDict(dict):
         if getattr(self, "_from_none", False) or getattr(self, "_from_missing", False):
             raise TypeError("Cannot modify NoneType or missing keys.")
 
-    def mg(self, key, default=_MISSING):
+    def mg(self, key: Any, default: Any = _MISSING) -> Any:
         """
         Shorthand for mget() method.
         """
         return self.mget(key, default)
 
-    def strict_get(self, key):
+    def strict_get(self, key: Any) -> Any:
         """
         Strict get method that mimics standard dict access.
         """
         return super().__getitem__(key)
 
-    def sget(self, key):
+    def sget(self, key: Any) -> Any:
         """
         Shorthand for strict_get() method.
         """
         return self.strict_get(key)
 
-    def sg(self, key):
+    def sg(self, key: Any) -> Any:
         """
         Shorthand for strict_get() method.
         """
         return self.strict_get(key)
 
-    def disenchant(self):
+    def disenchant(self) -> dict[Any, Any]:
         """
         Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully.
@@ -375,12 +375,12 @@ class MagiDict(dict):
         return _disenchant_recursive(self)
 
 
-def magi_loads(s: str, **kwargs) -> MagiDict:
+def magi_loads(s: str, **kwargs: Any) -> MagiDict:
     """Deserialize a JSON string into a MagiDict instead of a dict."""
     return json.loads(s, object_hook=MagiDict, **kwargs)
 
 
-def magi_load(fp, **kwargs) -> MagiDict:
+def magi_load(fp: Any, **kwargs: Any) -> MagiDict:
     """Deserialize a JSON file-like object into a MagiDict instead of a dict."""
     return json.load(fp, object_hook=MagiDict, **kwargs)
 
@@ -394,7 +394,7 @@ def enchant(d: dict) -> MagiDict:
     return MagiDict(d)
 
 
-def none(obj: Any):
+def none(obj: Any) -> Any:
     """Convert an empty MagiDict that was created from a None or missing key into None."""
     if (
         isinstance(obj, MagiDict)
