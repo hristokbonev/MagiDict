@@ -207,7 +207,7 @@ class MagiDict(dict):
                     ordered.append(attr)
         return ordered
 
-    def __deepcopy__(self, memo: dict) -> "MagiDict":
+    def __deepcopy__(self, memo: dict[int, Any]) -> "MagiDict":
         """Support deep copy of MagiDict, handling circular references."""
         copied = MagiDict()
         memo[id(self)] = copied
@@ -317,7 +317,7 @@ class MagiDict(dict):
         """
         return self.strict_get(key)
 
-    def disenchant(self) -> dict[Any, Any]:
+    def disenchant(self: "MagiDict") -> dict:
         """
         Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully.
