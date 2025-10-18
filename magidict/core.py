@@ -72,7 +72,7 @@ class MagiDict(dict):
                 if isinstance(item, list):
                     return [cls._hook_with_memo(elem, memo) for elem in item]
                 try:
-                    return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
+                    return type(item)(cls._hook_with_memo(elem, memo) for elem in item) # type: ignore[call-arg]
                 except TypeError:
                     return list(cls._hook_with_memo(elem, memo) for elem in item)
 
@@ -364,7 +364,7 @@ class MagiDict(dict):
                 if isinstance(item, list):
                     return new_list
                 try:
-                    return type(item)(new_list)
+                    return type(item)(new_list) # type: ignore[call-arg]
                 except TypeError:
                     return new_list
 
