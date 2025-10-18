@@ -19,7 +19,7 @@ with open("README.md", encoding="utf-8") as f:
 setup(
     name="magidict",
     version="0.1.4",
-    description="A forgiving dictionary with attribute-style access and safe nested access",
+    description="A recursive dictionary with safe attribute access and automatic conversion",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Hristo Bonev",
