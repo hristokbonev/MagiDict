@@ -10,7 +10,7 @@ import warnings
 from typing import Any
 
 try:
-    from ._magidict import MagiDict
+    from .core import MagiDict
 
     _using_c_extension = True
 except ImportError:
