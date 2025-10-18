@@ -352,14 +352,14 @@ class MagiDict(dict):
                 return tuple(_disenchant_recursive(elem) for elem in item)
 
             elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
-                new_list = []
+                new_list: list = []
                 memo[item_id] = new_list
                 for elem in item:
-                    new_list.append(_disenchant_recursive(elem))
+                    new_list.append(_disenchant_recursive(elem))  # type: ignore[index]
 
                 if not isinstance(item, list):
                     try:
-                        return type(item)(new_list)  # type: ignore[call-arg]
+                        return type(item)(new_list)  # type: ignore[index]
                     except TypeError:
                         return new_list
                 return new_list
