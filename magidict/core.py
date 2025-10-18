@@ -69,7 +69,10 @@ class MagiDict(dict):
                     item[i] = cls._hook_with_memo(elem, memo)
                 return item
             except TypeError:
-                return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
+                try:
+                    return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
+                except TypeError:
+                    return list(cls._hook_with_memo(elem, memo) for elem in item)
 
         return item
 
@@ -356,13 +359,12 @@ class MagiDict(dict):
                 memo[item_id] = new_list
                 for elem in item:
                     new_list.append(_disenchant_recursive(elem))
-
-                if not isinstance(item, list):
-                    try:
-                        return type(item)(new_list)
-                    except TypeError:
-                        return new_list
-                return new_list
+                if isinstance(item, list):
+                    return new_list
+                try:
+                    return type(item)(new_list)
+                except TypeError:
+                    return new_list
 
             elif isinstance(item, (set, frozenset)):
 
