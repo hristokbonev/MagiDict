@@ -1,12 +1,8 @@
 from typing import Any
 from .core import MagiDict
-from typing import overload, Any
+from typing import Any
 
-@overload
 def enchant(d: dict) -> MagiDict: ...
-@overload
 def magi_load(fp: Any, **kwargs: Any) -> MagiDict: ...
-@overload
 def magi_loads(s: str, **kwargs: Any) -> MagiDict: ...
-@overload
 def none(obj: Any) -> Any: ...
