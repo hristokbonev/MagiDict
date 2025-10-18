@@ -7,6 +7,7 @@ implementation in :mod:`.core`.
 
 import sys
 import warnings
+from typing import Any
 
 try:
     from ._magidict import MagiDict
@@ -27,19 +28,19 @@ try:
     from .core import magi_loads, magi_load, enchant, none
 except ImportError:
 
-    def magi_loads(s, **kwargs):
+    def magi_loads(s: Any, **kwargs: Any) -> MagiDict:
         """Fallback magi_loads - requires core module"""
         raise ImportError("magi_loads requires the core module to be available")
 
-    def magi_load(fp, **kwargs):
+    def magi_load(fp: Any, **kwargs: Any) -> MagiDict:
         """Fallback magi_load - requires core module"""
         raise ImportError("magi_load requires the core module to be available")
 
-    def enchant(d):
+    def enchant(d: dict) -> MagiDict:
         """Fallback enchant - requires core module"""
         raise ImportError("enchant requires the core module to be available")
 
-    def none(obj):
+    def none(obj: Any) -> Any:
         """Fallback none - requires core module"""
         raise ImportError("none requires the core module to be available")
 
