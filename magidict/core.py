@@ -66,10 +66,10 @@ class MagiDict(dict):
             try:
                 memo[item_id] = item
                 for i, elem in enumerate(item):
-                    item[i] = cls._hook_with_memo(elem, memo)
+                    item[i] = cls._hook_with_memo(elem, memo) # type: ignore[index]
                 return item
             except TypeError:
-                return type(item)(cls._hook_with_memo(elem, memo) for elem in item)  # type: ignore[call-arg]
+                return type(item)(cls._hook_with_memo(elem, memo) for elem in item) # type: ignore[call-arg]
 
         return item
 
@@ -359,7 +359,7 @@ class MagiDict(dict):
 
                 if not isinstance(item, list):
                     try:
-                        return type(item)(new_list)  # type: ignore[index]
+                        return type(item)(new_list)  # type: ignore[call-arg]
                     except TypeError:
                         return new_list
                 return new_list
