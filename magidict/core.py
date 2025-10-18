@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Any, Iterable, Mapping, Sequence, Union
+from typing import Any, Iterable, Mapping, MutableSequence, Sequence, Union
 
 
 _MISSING = object()
@@ -62,7 +62,7 @@ class MagiDict(dict):
                 return type(item)(*hooked_values)
             return type(item)(cls._hook_with_memo(elem, memo) for elem in item)
 
-        if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+        if isinstance(item, MutableSequence) and not isinstance(item, (str, bytes)):
             try:
                 memo[item_id] = item
                 for i, elem in enumerate(item):
@@ -351,7 +351,7 @@ class MagiDict(dict):
                     return type(item)(*disenchanted_values)
                 return tuple(_disenchant_recursive(elem) for elem in item)
 
-            elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+            elif isinstance(item, MutableSequence) and not isinstance(item, (str, bytes)):
                 new_list = []
                 memo[item_id] = new_list
                 for elem in item:
