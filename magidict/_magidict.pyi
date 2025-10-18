@@ -1,5 +1,5 @@
 from typing import Any
-from . import MagiDict
+from .core import MagiDict
 
 def enchant(d: Any) -> MagiDict: ...
 def magi_load(fp: Any, **kwargs: Any) -> MagiDict: ...
