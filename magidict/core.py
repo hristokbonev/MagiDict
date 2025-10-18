@@ -322,9 +322,9 @@ class MagiDict(dict):
         Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully.
         """
-        memo = {}
+        memo: dict[int, Any] = {}
 
-        def _disenchant_recursive(item):
+        def _disenchant_recursive(item: Any) -> Any:
             item_id = id(item)
             if item_id in memo:
                 return memo[item_id]
