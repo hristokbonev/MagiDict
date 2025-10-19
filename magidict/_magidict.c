@@ -1,5 +1,5 @@
-// magidict.c - Safe C implementation of MagiDict using composition
-// Fixed reference counting and memory management
+// magidict.c - Complete Safe C implementation of MagiDict using composition
+// Fixed reference counting, memory management, and full method support
 
 #include <Python.h>
 #include <string.h>
@@ -123,8 +123,7 @@ static PyObject *create_empty_magi_dict(int flag_type) {
 }
 
 // ============================================================================
-// Recursive Hooking (converts nested dicts to MagiDicts)
-// FIXED: memo is passed through and NOT decreffed in recursive calls
+// Recursive Hooking
 // ============================================================================
 
 static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
@@ -132,7 +131,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
         return NULL;
     }
 
-    // Check if already in memo using id()
     PyObject *item_id = PyLong_FromVoidPtr((void *)item);
     if (item_id == NULL) {
         return NULL;
@@ -153,14 +151,11 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
 
     PyObject *result = NULL;
 
-    // Handle MagiDict - return as-is
     if (PyObject_TypeCheck(item, &MagiDictType)) {
         Py_INCREF(item);
         result = item;
-        // Store in memo to handle circular references
         PyDict_SetItem(memo, item_id, result);
     }
-    // Handle dict - convert to MagiDict recursively
     else if (PyDict_Check(item)) {
         result = create_empty_magi_dict(0);
         if (result == NULL) {
@@ -168,7 +163,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
             return NULL;
         }
 
-        // Store in memo BEFORE recursing to handle circular references
         int memo_ret = PyDict_SetItem(memo, item_id, result);
         if (memo_ret < 0) {
             Py_DECREF(result);
@@ -181,7 +175,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
         Py_ssize_t pos = 0;
 
         while (PyDict_Next(item, &pos, &k, &v)) {
-            // memo is passed through WITHOUT being decreffed
             PyObject *hooked_v = MagiDict_HookWithMemo(v, memo);
             if (hooked_v == NULL) {
                 Py_DECREF(result);
@@ -197,7 +190,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
             }
         }
     }
-    // Handle list - hook elements in place
     else if (PyList_Check(item)) {
         PyDict_SetItem(memo, item_id, item);
         result = item;
@@ -217,10 +209,8 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
                 Py_DECREF(item_id);
                 return NULL;
             }
-            // PyList_SetItem steals reference
             int ret = PyList_SetItem(item, i, hooked_elem);
             if (ret < 0) {
-                // If SetItem fails, we still own the reference
                 Py_DECREF(hooked_elem);
                 Py_DECREF(result);
                 Py_DECREF(item_id);
@@ -228,7 +218,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
             }
         }
     }
-    // Handle tuple - create new tuple with hooked elements
     else if (PyTuple_Check(item)) {
         Py_ssize_t size = PyTuple_Size(item);
         PyObject *hooked_tuple = PyTuple_New(size);
@@ -237,7 +226,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
             return NULL;
         }
 
-        // Store NEW tuple in memo before recursing (for circular references)
         int memo_ret = PyDict_SetItem(memo, item_id, hooked_tuple);
         if (memo_ret < 0) {
             Py_DECREF(hooked_tuple);
@@ -258,7 +246,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
                 Py_DECREF(item_id);
                 return NULL;
             }
-            // PyTuple_SetItem steals reference
             int ret = PyTuple_SetItem(hooked_tuple, i, hooked);
             if (ret < 0) {
                 Py_DECREF(hooked_tuple);
@@ -268,7 +255,6 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
         }
         result = hooked_tuple;
     }
-    // Other types - return as-is
     else {
         Py_INCREF(item);
         result = item;
@@ -283,16 +269,14 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
 // ============================================================================
 
 static PyObject *MagiDict_subscript(MagiDict *self, PyObject *key) {
-    // Handle dotted string keys (e.g., "a.b.c")
     if (PyUnicode_Check(key)) {
         const char *key_str = PyUnicode_AsUTF8(key);
         if (key_str && strchr(key_str, '.') != NULL) {
-            // FIXED: Create separator string and properly decref it
             PyObject *sep = PyUnicode_FromString(".");
             if (sep == NULL) return NULL;
 
             PyObject *keys = PyUnicode_Split(key, sep, -1);
-            Py_DECREF(sep);  // FIXED: Always decref the separator
+            Py_DECREF(sep);
 
             if (keys == NULL) return NULL;
 
@@ -355,7 +339,6 @@ static PyObject *MagiDict_subscript(MagiDict *self, PyObject *key) {
         }
     }
 
-    // Standard dict access
     PyObject *value = PyDict_GetItemWithError(self->dict, key);
     if (value == NULL) {
         if (PyErr_Occurred()) return NULL;
@@ -389,12 +372,19 @@ static int MagiDict_ass_subscript(MagiDict *self, PyObject *key, PyObject *value
     return ret;
 }
 
+static Py_ssize_t MagiDict_length(MagiDict *self) {
+    return PyDict_Size(self->dict);
+}
+
+static int MagiDict_contains(MagiDict *self, PyObject *key) {
+    return PyDict_Contains(self->dict, key);
+}
+
 // ============================================================================
 // Attribute Access
 // ============================================================================
 
 static PyObject *MagiDict_getattr(MagiDict *self, PyObject *name) {
-    // Check for special attributes
     if (PyUnicode_Check(name)) {
         const char *name_str = PyUnicode_AsUTF8(name);
         if (name_str) {
@@ -407,7 +397,6 @@ static PyObject *MagiDict_getattr(MagiDict *self, PyObject *name) {
         }
     }
 
-    // Try to get from dict first
     PyObject *value = PyDict_GetItemWithError(self->dict, name);
     if (value != NULL) {
         if (value == Py_None) {
@@ -421,14 +410,24 @@ static PyObject *MagiDict_getattr(MagiDict *self, PyObject *name) {
         PyErr_Clear();
     }
 
-    // Return empty MagiDict for missing keys
     return create_empty_magi_dict(2);
 }
 
 static int MagiDict_setattr(MagiDict *self, PyObject *name, PyObject *value) {
-    // Block all attribute assignment to match Python behavior
     PyErr_SetString(PyExc_AttributeError, "Cannot modify MagiDict attributes");
     return -1;
+}
+
+// ============================================================================
+// Boolean Evaluation
+// ============================================================================
+
+static int MagiDict_bool(MagiDict *self) {
+    // Empty MagiDicts from None/missing are falsy
+    if (self->from_none || self->from_missing) {
+        return 0;
+    }
+    return PyDict_Size(self->dict) > 0 ? 1 : 0;
 }
 
 // ============================================================================
@@ -493,7 +492,6 @@ static PyObject *MagiDict_disenchant(MagiDict *self, PyObject *args) {
                 return NULL;
             }
         } else if (PyList_Check(value)) {
-            // Recursively disenchant lists
             Py_ssize_t list_size = PyList_Size(value);
             converted = PyList_New(list_size);
             if (converted == NULL) {
@@ -523,10 +521,9 @@ static PyObject *MagiDict_disenchant(MagiDict *self, PyObject *args) {
                     Py_DECREF(result);
                     return NULL;
                 }
-                PyList_SetItem(converted, i, elem_converted);  // steals reference
+                PyList_SetItem(converted, i, elem_converted);
             }
         } else if (PyTuple_Check(value)) {
-            // Recursively disenchant tuples
             Py_ssize_t tuple_size = PyTuple_Size(value);
             converted = PyTuple_New(tuple_size);
             if (converted == NULL) {
@@ -556,7 +553,7 @@ static PyObject *MagiDict_disenchant(MagiDict *self, PyObject *args) {
                     Py_DECREF(result);
                     return NULL;
                 }
-                PyTuple_SetItem(converted, i, elem_converted);  // steals reference
+                PyTuple_SetItem(converted, i, elem_converted);
             }
         } else {
             converted = value;
@@ -583,6 +580,105 @@ static PyObject *MagiDict_repr(MagiDict *self) {
     return result;
 }
 
+static PyObject *MagiDict_dir(MagiDict *self) {
+    PyObject *keys = PyDict_Keys(self->dict);
+    if (keys == NULL) return NULL;
+
+    PyObject *result = PyList_New(0);
+    if (result == NULL) {
+        Py_DECREF(keys);
+        return NULL;
+    }
+
+    Py_ssize_t size = PyList_Size(keys);
+    for (Py_ssize_t i = 0; i < size; i++) {
+        PyObject *key = PyList_GetItem(keys, i);
+        if (PyUnicode_Check(key)) {
+            if (PyList_Append(result, key) < 0) {
+                Py_DECREF(result);
+                Py_DECREF(keys);
+                return NULL;
+            }
+        }
+    }
+
+    Py_DECREF(keys);
+    return result;
+}
+
+static PyObject *MagiDict_getstate(MagiDict *self) {
+    PyObject *state = PyDict_New();
+    if (state == NULL) return NULL;
+
+    PyObject *data_dict = PyDict_New();
+    if (data_dict == NULL) {
+        Py_DECREF(state);
+        return NULL;
+    }
+
+    if (PyDict_Update(data_dict, self->dict) < 0) {
+        Py_DECREF(data_dict);
+        Py_DECREF(state);
+        return NULL;
+    }
+
+    if (PyDict_SetItemString(state, "data", data_dict) < 0) {
+        Py_DECREF(data_dict);
+        Py_DECREF(state);
+        return NULL;
+    }
+    Py_DECREF(data_dict);
+
+    PyObject *from_none = PyBool_FromLong(self->from_none);
+    if (PyDict_SetItemString(state, "_from_none", from_none) < 0) {
+        Py_DECREF(from_none);
+        Py_DECREF(state);
+        return NULL;
+    }
+    Py_DECREF(from_none);
+
+    PyObject *from_missing = PyBool_FromLong(self->from_missing);
+    if (PyDict_SetItemString(state, "_from_missing", from_missing) < 0) {
+        Py_DECREF(from_missing);
+        Py_DECREF(state);
+        return NULL;
+    }
+    Py_DECREF(from_missing);
+
+    return state;
+}
+
+static PyObject *MagiDict_setstate(MagiDict *self, PyObject *state) {
+    if (!PyDict_Check(state)) {
+        PyErr_SetString(PyExc_TypeError, "state must be a dict");
+        return NULL;
+    }
+
+    PyObject *from_none_obj = PyDict_GetItemString(state, "_from_none");
+    if (from_none_obj != NULL) {
+        self->from_none = PyObject_IsTrue(from_none_obj);
+    }
+
+    PyObject *from_missing_obj = PyDict_GetItemString(state, "_from_missing");
+    if (from_missing_obj != NULL) {
+        self->from_missing = PyObject_IsTrue(from_missing_obj);
+    }
+
+    PyObject *data = PyDict_GetItemString(state, "data");
+    if (data != NULL && PyDict_Check(data)) {
+        PyDict_Clear(self->dict);
+        if (PyDict_Update(self->dict, data) < 0) {
+            return NULL;
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
+static PyObject *MagiDict_reduce_ex(MagiDict *self, PyObject *args) {
+    return PyObject_CallMethod((PyObject *)self, "__reduce_ex__", "i", 2);
+}
+
 // ============================================================================
 // Method Definitions
 // ============================================================================
@@ -594,12 +690,23 @@ static PyMethodDef MagiDict_methods[] = {
      "Shorthand for mget"},
     {"disenchant", (PyCFunction)MagiDict_disenchant, METH_NOARGS,
      "Convert MagiDict and nested MagiDicts back to standard dicts"},
+    {"__dir__", (PyCFunction)MagiDict_dir, METH_NOARGS,
+     "Return list of valid attributes"},
+    {"__getstate__", (PyCFunction)MagiDict_getstate, METH_NOARGS,
+     "Get state for pickling"},
+    {"__setstate__", (PyCFunction)MagiDict_setstate, METH_O,
+     "Set state from pickling"},
     {NULL, NULL, 0, NULL}
 };
 
 static PyMappingMethods MagiDict_as_mapping = {
+    .mp_length = (lenfunc)MagiDict_length,
     .mp_subscript = (binaryfunc)MagiDict_subscript,
     .mp_ass_subscript = (objobjargproc)MagiDict_ass_subscript,
+};
+
+static PySequenceMethods MagiDict_as_sequence = {
+    .sq_contains = (objobjproc)MagiDict_contains,
 };
 
 // ============================================================================
@@ -620,7 +727,9 @@ static PyTypeObject MagiDictType = {
     .tp_getattro = (getattrofunc)MagiDict_getattr,
     .tp_setattro = (setattrofunc)MagiDict_setattr,
     .tp_as_mapping = &MagiDict_as_mapping,
+    .tp_as_sequence = &MagiDict_as_sequence,
     .tp_methods = MagiDict_methods,
+    .nb_bool = (inquiry)MagiDict_bool,
 };
 
 // ============================================================================
@@ -637,6 +746,12 @@ static PyModuleDef magidictmodule = {
 
 PyMODINIT_FUNC PyInit__magidict(void) {
     PyObject *m;
+
+    // Update NumberMethods structure
+    PyType_Slot slots[] = {
+        {Py_nb_bool, (inquiry)MagiDict_bool},
+        {0, NULL}
+    };
 
     if (PyType_Ready(&MagiDictType) < 0)
         return NULL;
