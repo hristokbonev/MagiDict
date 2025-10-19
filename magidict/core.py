@@ -1,6 +1,7 @@
 import json
 from copy import deepcopy
-from typing import Any, Iterable, Mapping, MutableSequence, Sequence, Union
+from typing import Any, Iterable, List, Mapping, Sequence, Union
+from inspect import signature
 
 
 _MISSING = object()
@@ -163,36 +164,6 @@ class MagiDict(dict):
         self._raise_if_protected()
         super().__delitem__(key)
 
-    def update(self, *args, **kwargs):
-        """Recursively convert nested dicts into MagiDicts on update."""
-        self._raise_if_protected()
-        for k, v in dict(*args, **kwargs).items():
-            self[k] = v
-
-    def copy(self):
-        """Return a shallow copy of the MagiDict, preserving special flags."""
-        new_copy = MagiDict(super().copy())
-        # Preserve the special flags
-        if getattr(self, "_from_none", False):
-            object.__setattr__(new_copy, "_from_none", True)
-        if getattr(self, "_from_missing", False):
-            object.__setattr__(new_copy, "_from_missing", True)
-
-        return new_copy
-
-    def setdefault(self, key: Any, default: Any = None) -> Any:
-        """Overrides dict.setdefault to ensure the default value is hooked."""
-        self._raise_if_protected()
-        return super().setdefault(key, self._hook(default))
-
-    @classmethod
-    def fromkeys(cls, seq, value=None):
-        """Overrides dict.fromkeys to ensure the value is hooked."""
-        d = {}
-        for key in seq:
-            d[key] = cls._hook(value)
-        return cls(d)
-
     def __dir__(self):
         """Provides keys as attributes for auto-completion in interactive environments."""
         key_attrs = sorted(k for k in self.keys() if isinstance(k, str))
@@ -224,21 +195,6 @@ class MagiDict(dict):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def pop(self, key: Any, *args: Any) -> Any:
-        """Prevent popping items on MagiDicts created from missing or None keys."""
-        self._raise_if_protected()
-        return super().pop(key, *args)
-
-    def popitem(self):
-        """Prevent popping items on MagiDicts created from missing or None keys."""
-        self._raise_if_protected()
-        return super().popitem()
-
-    def clear(self):
-        """Prevent clearing items on MagiDicts created from missing or None keys."""
-        self._raise_if_protected()
-        super().clear()
-
     def __getstate__(self):
         """
         Return the state to be pickled. Include both the dict contents and special flags.
@@ -268,11 +224,65 @@ class MagiDict(dict):
         for k, v in state.get("data", {}).items():
             dict.__setitem__(self, k, self._hook(v))
 
+    def update(self, *args, **kwargs):
+        """Recursively convert nested dicts into MagiDicts on update."""
+        self._raise_if_protected()
+        for k, v in dict(*args, **kwargs).items():
+            self[k] = v
+
+    def copy(self):
+        """Return a shallow copy of the MagiDict, preserving special flags."""
+        new_copy = MagiDict(super().copy())
+        # Preserve the special flags
+        if getattr(self, "_from_none", False):
+            object.__setattr__(new_copy, "_from_none", True)
+        if getattr(self, "_from_missing", False):
+            object.__setattr__(new_copy, "_from_missing", True)
+
+        return new_copy
+
+    def setdefault(self, key: Any, default: Any = None) -> Any:
+        """Overrides dict.setdefault to ensure the default value is hooked."""
+        self._raise_if_protected()
+        return super().setdefault(key, self._hook(default))
+
+    @classmethod
+    def fromkeys(cls, seq, value=None):
+        """Overrides dict.fromkeys to ensure the value is hooked."""
+        d = {}
+        for key in seq:
+            d[key] = cls._hook(value)
+        return cls(d)
+
+    def pop(self, key: Any, *args: Any) -> Any:
+        """Prevent popping items on MagiDicts created from missing or None keys."""
+        self._raise_if_protected()
+        return super().pop(key, *args)
+
+    def popitem(self):
+        """Prevent popping items on MagiDicts created from missing or None keys."""
+        self._raise_if_protected()
+        return super().popitem()
+
+    def clear(self):
+        """Prevent clearing items on MagiDicts created from missing or None keys."""
+        self._raise_if_protected()
+        super().clear()
+
     def mget(self, key: Any, default: Any = _MISSING) -> Any:
         """
         Safe get method that mimics attribute-style access.
         If the key doesn't exist, returns an empty MagiDict instead of raising KeyError.
         If the key exists but its value is None, returns an empty MagiDict for safe chaining.
+
+        Parameters:
+            key: The key to retrieve.
+            default: The default value to return if the key is missing. If not provided,
+                     an empty MagiDict is returned for missing keys.
+
+        Returns:
+            The value associated with the key, or an empty MagiDict if the key is missing
+            or its value is None.
         """
         if default is _MISSING:
             md = MagiDict()
@@ -302,6 +312,12 @@ class MagiDict(dict):
     def strict_get(self, key: Any) -> Any:
         """
         Strict get method that mimics standard dict access.
+
+        Parameters:
+            key: The key to retrieve.
+
+        Returns:
+            The value associated with the key.
         """
         return super().__getitem__(key)
 
@@ -374,19 +390,191 @@ class MagiDict(dict):
 
         return _disenchant_recursive(self)
 
+    def search_key(self, key: Any, default=None) -> Union[Any, None]:
+        """
+        Recursively search for a key in the MagiDict and its nested structures.
+        Returns the value if found, otherwise returns None or the specified default.
+
+        Parameters:
+            key: The key to search for.
+            default: The value to return if the key is not found.
+
+        Returns:
+            The value associated with the specified key, or None/default if not found.
+        """
+        for k, v in self.items():
+            if k == key:
+                return v
+
+            def recurse(value):
+                if isinstance(value, MagiDict):
+                    return value.search_key(key)
+                if isinstance(value, Mapping):
+                    return MagiDict(value).search_key(key)
+                return default
+
+            if isinstance(v, Mapping):
+                result = recurse(v)
+                if result is not None:
+                    return result
+
+            if isinstance(v, Sequence) and not isinstance(v, (str, bytes)):
+                for item in v:
+                    if isinstance(item, Mapping):
+                        result = recurse(item)
+                        if result is not None:
+                            return result
+
+        return default
+
+    def search_keys(self, key: Any) -> List[Any]:
+        """
+        Recursively search for all occurrences of a key in the MagiDict and its nested structures.
+        Returns a list of all found values.
+
+        Parameters:
+            key: The key to search for.
+
+        Returns:
+            A list of all values associated with the specified key.
+        """
+        results = []
+
+        def recurse(value):
+            if isinstance(value, MagiDict):
+                results.extend(value.search_keys(key))
+            elif isinstance(value, Mapping):
+                results.extend(MagiDict(value).search_keys(key))
+            elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                for item in value:
+                    recurse(item)
+
+        for k, v in self.items():
+            if k == key:
+                results.append(v)
+            recurse(v)
+
+        return results
+
+    def filter(self, function: Any = None, drop_empty=False) -> "MagiDict":
+        """
+        Returns a new MagiDict containing only the items for which the function(key) or function(key, value)
+        returns True. Supports nested dicts and sequences. If drop_empty is True, empty MagiDicts and sequences
+        are omitted from the result.
+
+        Parameters:
+            function: A function that takes one argument (value) or two arguments (key, value) and returns True or False.
+            drop_empty: If True, empty MagiDicts and sequences are omitted from the result.
+
+        Returns:
+            A new MagiDict with filtered items.
+        """
+
+        if function is None:
+
+            def _function(x):
+                return x is not None
+
+            function = _function
+
+        num_args = len(signature(function).parameters)
+
+        def filter_nested_seq(
+            seq: Sequence, function: Any, num_args: int, drop_empty: bool
+        ) -> List[Any]:
+            """Recursively filter nested sequences while preserving structure."""
+            new_seq: List[Any] = []
+            for i, item in enumerate(seq):
+                if isinstance(item, MagiDict):
+                    nested = item.filter(function, drop_empty=drop_empty)
+                    if nested or not drop_empty:
+                        new_seq.append(nested)
+                elif isinstance(item, Mapping):
+                    nested = MagiDict(item).filter(function, drop_empty=drop_empty)
+                    if nested or not drop_empty:
+                        new_seq.append(nested)
+                elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+                    nested = filter_nested_seq(item, function, num_args, drop_empty)
+                    if nested or not drop_empty:
+                        new_seq.append(nested)
+                else:
+                    if num_args == 2:
+                        if function(i, item):
+                            new_seq.append(item)
+                    else:
+                        if function(item):
+                            new_seq.append(item)
+            return new_seq
+
+        filtered: MagiDict = MagiDict()
+
+        for k, v in self.items():
+            if isinstance(v, MagiDict):
+                nested = v.filter(function, drop_empty=drop_empty)
+                if nested or not drop_empty:
+                    filtered[k] = nested
+            elif isinstance(v, Mapping):
+                nested = MagiDict(v).filter(function, drop_empty=drop_empty)
+                if nested or not drop_empty:
+                    filtered[k] = nested
+            elif isinstance(v, Sequence) and not isinstance(v, (str, bytes)):
+                new_seq: Union[List[Any], Sequence[Any]] = filter_nested_seq(
+                    v, function, num_args, drop_empty
+                )
+                if new_seq or not drop_empty:
+                    try:
+                        filtered[k] = type(v)(new_seq)
+                    except TypeError:
+                        filtered[k] = new_seq
+            else:
+                if num_args == 2:
+                    if function(k, v):
+                        filtered[k] = v
+                else:
+                    if function(v):
+                        filtered[k] = v
+
+        return filtered
+
 
 def magi_loads(s: str, **kwargs: Any) -> MagiDict:
-    """Deserialize a JSON string into a MagiDict instead of a dict."""
+    """
+    Deserialize a JSON string into a MagiDict instead of a dict.
+
+    Parameters:
+        s: The JSON string to deserialize.
+        **kwargs: Additional keyword arguments to pass to json.loads.
+
+    Returns:
+        A MagiDict representing the deserialized JSON data.
+    """
     return json.loads(s, object_hook=MagiDict, **kwargs)
 
 
 def magi_load(fp: Any, **kwargs: Any) -> MagiDict:
-    """Deserialize a JSON file-like object into a MagiDict instead of a dict."""
+    """
+    Deserialize a JSON file-like object into a MagiDict instead of a dict.
+
+    Parameters:
+        fp: The file-like object to read the JSON data from.
+        **kwargs: Additional keyword arguments to pass to json.load.
+
+    Returns:
+        A MagiDict representing the deserialized JSON data.
+    """
     return json.load(fp, object_hook=MagiDict, **kwargs)
 
 
 def enchant(d: dict) -> MagiDict:
-    """Convert a standard dictionary into a MagiDict."""
+    """
+    Convert a standard dictionary into a MagiDict.
+
+    Parameters:
+        d: The standard dictionary to convert.
+
+    Returns:
+        A MagiDict representing the input dictionary.
+    """
     if isinstance(d, MagiDict):
         return d
     if not isinstance(d, dict):
@@ -395,7 +583,14 @@ def enchant(d: dict) -> MagiDict:
 
 
 def none(obj: Any) -> Any:
-    """Convert an empty MagiDict that was created from a None or missing key into None."""
+    """Convert an empty MagiDict that was created from a None or missing key into None.
+
+    Parameters:
+        obj: The object to check.
+
+    Returns:
+        None if the object is an empty MagiDict created from None or missing key, otherwise returns the object itself.
+    """
     if (
         isinstance(obj, MagiDict)
         and len(obj) == 0

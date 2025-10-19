@@ -4,14 +4,14 @@ import io
 import sys
 import threading
 from typing import OrderedDict
-from unittest import TestCase
+from unittest import TestCase, main
 import copy
 from copy import deepcopy
 import pickle
 from types import MappingProxyType
 import json
 import weakref
-from magidict.core import MagiDict, enchant, magi_load, magi_loads, none
+from magidict import MagiDict, enchant, magi_load, magi_loads, none
 
 
 md = MagiDict(
@@ -6410,3 +6410,461 @@ class TestStrictGet(TestCase):
         # Result should be a MagiDict (converted during initialization)
         self.assertIsInstance(result, MagiDict)
         self.assertEqual(result["key"], "value")
+
+
+class TestMagiDictSearchKey(TestCase):
+    """Tests for the search_key() method of MagiDict."""
+
+    def test_search_key_simple(self):
+        """Test searching for a key in a simple MagiDict."""
+        md = MagiDict({"name": "Alice", "age": 30})
+        self.assertEqual(md.search_key("name"), "Alice")
+        self.assertEqual(md.search_key("age"), 30)
+
+    def test_search_key_not_found(self):
+        """Test searching for a non-existent key returns None."""
+        md = MagiDict({"name": "Bob"})
+        self.assertIsNone(md.search_key("missing"))
+
+    def test_search_key_nested_dict(self):
+        """Test searching for a key in nested dictionaries."""
+        md = MagiDict({"user": {"profile": {"email": "test@example.com"}}})
+        self.assertEqual(md.search_key("email"), "test@example.com")
+
+    def test_search_key_in_list(self):
+        """Test searching for a key within dicts inside a list."""
+        md = MagiDict({"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]})
+        self.assertEqual(md.search_key("name"), "Alice")
+
+    def test_search_key_deeply_nested(self):
+        """Test searching through deeply nested structures."""
+        md = MagiDict({"level1": {"level2": {"level3": {"target": "found"}}}})
+        self.assertEqual(md.search_key("target"), "found")
+
+    def test_search_key_returns_first_match(self):
+        """Test that search_key returns the first occurrence when multiple exist."""
+        md = MagiDict({"first": {"key": "value1"}, "second": {"key": "value2"}})
+        result = md.search_key("key")
+        self.assertIn(result, ["value1", "value2"])
+
+    def test_search_key_empty_dict(self):
+        """Test searching in an empty MagiDict."""
+        md = MagiDict({})
+        self.assertIsNone(md.search_key("any_key"))
+
+    def test_search_key_with_none_value(self):
+        """Test searching for a key with None as its value."""
+        md = MagiDict({"nullable": None})
+        self.assertIsNone(md.search_key("nullable"))
+
+    def test_search_key_mixed_types(self):
+        """Test searching through mixed nested structures."""
+        md = MagiDict({"data": [{"item": {"value": 10}}, {"item": {"value": 20}}]})
+        self.assertEqual(md.search_key("value"), 10)
+
+
+class TestMagiDictSearchKeys(TestCase):
+    """Tests for the search_keys() method of MagiDict."""
+
+    def test_search_keys_single_occurrence(self):
+        """Test searching for a key with one occurrence."""
+        md = MagiDict({"name": "Alice"})
+        results = md.search_keys("name")
+        self.assertEqual(results, ["Alice"])
+
+    def test_search_keys_multiple_occurrences(self):
+        """Test searching for a key with multiple occurrences."""
+        md = MagiDict({"id": 1, "nested": {"id": 2}, "list": [{"id": 3}]})
+        results = md.search_keys("id")
+        self.assertEqual(sorted(results), [1, 2, 3])
+
+    def test_search_keys_not_found(self):
+        """Test searching for a non-existent key returns empty list."""
+        md = MagiDict({"name": "Bob"})
+        results = md.search_keys("missing")
+        self.assertEqual(results, [])
+
+    def test_search_keys_in_nested_dicts(self):
+        """Test finding multiple keys in nested dictionaries."""
+        md = MagiDict(
+            {
+                "user1": {"email": "alice@example.com"},
+                "user2": {"email": "bob@example.com"},
+            }
+        )
+        results = md.search_keys("email")
+        self.assertEqual(
+            sorted(results), sorted(["alice@example.com", "bob@example.com"])
+        )
+
+    def test_search_keys_in_list_of_dicts(self):
+        """Test finding keys within a list of dictionaries."""
+        md = MagiDict(
+            {"users": [{"id": 1, "status": "active"}, {"id": 2, "status": "inactive"}]}
+        )
+        results = md.search_keys("status")
+        self.assertEqual(sorted(results), ["active", "inactive"])
+
+    def test_search_keys_deeply_nested(self):
+        """Test searching through deeply nested structures."""
+        md = MagiDict(
+            {"a": {"b": {"c": {"target": "value1"}}}, "x": {"y": {"target": "value2"}}}
+        )
+        results = md.search_keys("target")
+        self.assertEqual(sorted(results), sorted(["value1", "value2"]))
+
+    def test_search_keys_empty_dict(self):
+        """Test searching in an empty MagiDict."""
+        md = MagiDict({})
+        results = md.search_keys("any_key")
+        self.assertEqual(results, [])
+
+    def test_search_keys_with_none_values(self):
+        """Test finding keys with None as values."""
+        md = MagiDict({"field1": None, "nested": {"field1": None}})
+        results = md.search_keys("field1")
+        self.assertEqual(results, [None, None])
+
+    def test_search_keys_mixed_nesting(self):
+        """Test searching through mixed nested lists and dicts."""
+        md = MagiDict(
+            {"outer": [{"inner": [{"key": "value1"}]}, {"inner": [{"key": "value2"}]}]}
+        )
+        results = md.search_keys("key")
+        self.assertEqual(sorted(results), ["value1", "value2"])
+
+    def test_search_keys_with_various_types(self):
+        """Test finding keys with various value types."""
+        md = MagiDict({"count": 42, "nested": {"count": 100}, "list": [{"count": 5}]})
+        results = md.search_keys("count")
+        self.assertEqual(sorted(results), [5, 42, 100])
+
+    def test_search_keys_duplicate_values(self):
+        """Test that duplicate values are all returned."""
+        md = MagiDict({"a": {"value": "dup"}, "b": {"value": "dup"}})
+        results = md.search_keys("value")
+        self.assertEqual(results, ["dup", "dup"])
+
+    def test_search_keys_in_lists_of_lists(self):
+        """Test searching through nested lists."""
+        md = MagiDict({"data": [[{"key": "v1"}], [{"key": "v2"}]]})
+        results = md.search_keys("key")
+        self.assertEqual(sorted(results), ["v1", "v2"])
+
+
+class TestSearchKeyEdgeCases(TestCase):
+    """Edge case tests for both search_key and search_keys."""
+
+    def test_search_with_numeric_keys(self):
+        """Test searching with numeric string keys."""
+        md = MagiDict({"data": {123: "value"}})
+        self.assertIsNone(md.search_key("123"))
+
+    def test_search_with_special_characters(self):
+        """Test searching for keys with special characters."""
+        md = MagiDict({"user-id": 1, "nested": {"user-id": 2}})
+        results = md.search_keys("user-id")
+        self.assertEqual(sorted(results), [1, 2])
+
+    def test_search_complex_nested_structure(self):
+        """Test searching through a complex realistic structure."""
+        md = MagiDict(
+            {
+                "users": [
+                    {
+                        "id": 1,
+                        "name": "Alice",
+                        "posts": [
+                            {"id": 101, "title": "Post 1"},
+                            {"id": 102, "title": "Post 2"},
+                        ],
+                    },
+                    {"id": 2, "name": "Bob", "posts": [{"id": 201, "title": "Post 3"}]},
+                ]
+            }
+        )
+        results = md.search_keys("id")
+        self.assertEqual(sorted(results), [1, 2, 101, 102, 201])
+
+    def test_search_with_empty_nested_lists(self):
+        """Test searching when there are empty nested lists."""
+        md = MagiDict({"items": [], "nested": {"items": [{"key": "value"}]}})
+        results = md.search_keys("key")
+        self.assertEqual(results, ["value"])
+
+
+class TestFilterBasic(TestCase):
+    """Test basic filtering functionality."""
+
+    def test_filter_with_value_function(self):
+        """Test filtering using a function that takes only values."""
+        md = MagiDict({"a": 1, "b": 2, "c": 3})
+        result = md.filter(lambda x: x > 1)
+        self.assertEqual(result, MagiDict({"b": 2, "c": 3}))
+
+    def test_filter_with_key_value_function(self):
+        """Test filtering using a function that takes key and value."""
+        md = MagiDict({"a": 1, "b": 2, "c": 3})
+        result = md.filter(lambda k, v: k in ["a", "c"])
+        self.assertEqual(result, MagiDict({"a": 1, "c": 3}))
+
+    def test_filter_removes_non_matching_items(self):
+        """Test that items not matching the filter are removed."""
+        md = MagiDict({"x": 10, "y": 5, "z": 15})
+        result = md.filter(lambda v: v >= 10)
+        self.assertEqual(result, MagiDict({"x": 10, "z": 15}))
+
+    def test_filter_with_none_function(self):
+        """Test filtering with None function removes None values."""
+        md = MagiDict({"a": 1, "b": None, "c": 3})
+        result = md.filter(None)
+        self.assertEqual(result, MagiDict({"a": 1, "c": 3}))
+
+    def test_filter_empty_dict(self):
+        """Test filtering an empty MagiDict."""
+        md = MagiDict()
+        result = md.filter(lambda x: x > 5)
+        self.assertEqual(result, MagiDict())
+
+
+class TestFilterNested(TestCase):
+    """Test filtering with nested structures."""
+
+    def test_filter_nested_magidict(self):
+        """Test filtering nested MagiDicts."""
+        md = MagiDict({"outer": MagiDict({"a": 1, "b": 2})})
+        result = md.filter(lambda x: x > 1)
+        self.assertEqual(result, MagiDict({"outer": MagiDict({"b": 2})}))
+
+    def test_filter_nested_regular_dict(self):
+        """Test filtering nested regular dicts."""
+        md = MagiDict({"outer": {"a": 1, "b": 2}})
+        result = md.filter(lambda x: x > 1)
+        self.assertEqual(result, MagiDict({"outer": MagiDict({"b": 2})}))
+
+    def test_filter_deeply_nested(self):
+        """Test filtering deeply nested structures."""
+        md = MagiDict({"level1": {"level2": {"a": 1, "b": 5, "c": 2}}})
+        result = md.filter(lambda x: x > 2)
+        self.assertEqual(result, MagiDict({"level1": {"level2": {"b": 5}}}))
+
+    def test_filter_nested_list_of_dicts(self):
+        """Test filtering nested lists containing dicts."""
+        md = MagiDict({"items": [{"x": 1, "y": 2}, {"x": 5, "y": 3}]})
+        result = md.filter(lambda x: x > 2)
+        self.assertEqual(len(result["items"]), 2)
+        self.assertIsInstance(result["items"][0], (dict, MagiDict))
+
+    def test_filter_list_with_key_value_function(self):
+        """Test filtering lists with key-value function."""
+        md = MagiDict({"items": [10, 20, 5, 15]})
+        result = md.filter(lambda k, v: v >= 15)
+        self.assertEqual(result, MagiDict({"items": [20, 15]}))
+
+
+class TestFilterDropEmpty(TestCase):
+    """Test drop_empty parameter."""
+
+    def test_drop_empty_true_removes_empty_nested_dicts(self):
+        """Test that drop_empty=True removes empty nested dicts."""
+        md = MagiDict({"keep": {"a": 1}, "remove": {"x": 10, "y": 20}})
+        result = md.filter(lambda x: x == 1, drop_empty=True)
+        self.assertEqual(result, MagiDict({"keep": {"a": 1}}))
+
+    def test_drop_empty_false_keeps_empty_nested_dicts(self):
+        """Test that drop_empty=False keeps empty nested dicts."""
+        md = MagiDict({"keep": {"a": 1}, "remove": {"x": 10, "y": 20}})
+        result = md.filter(lambda x: x == 1, drop_empty=False)
+        self.assertEqual(len(result), 2)
+        self.assertIn("keep", result)
+        self.assertIn("remove", result)
+        self.assertEqual(len(result["remove"]), 0)
+
+    def test_drop_empty_true_removes_empty_lists(self):
+        """Test that drop_empty=True removes empty lists."""
+        md = MagiDict({"keep": [1, 2], "remove": [10, 20]})
+        result = md.filter(lambda x: x <= 5, drop_empty=True)
+        self.assertEqual(result, MagiDict({"keep": [1, 2]}))
+
+    def test_drop_empty_false_keeps_empty_lists(self):
+        """Test that drop_empty=False keeps empty lists."""
+        md = MagiDict({"keep": [1, 2], "remove": [10, 20]})
+        result = md.filter(lambda x: x <= 5, drop_empty=False)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["remove"], [])
+
+
+class TestFilterSequences(TestCase):
+    """Test filtering with various sequence types."""
+
+    def test_filter_with_list(self):
+        """Test filtering lists in MagiDict."""
+        md = MagiDict({"nums": [1, 2, 3, 4, 5]})
+        result = md.filter(lambda x: x > 2)
+        self.assertEqual(result, MagiDict({"nums": [3, 4, 5]}))
+
+    def test_filter_with_tuple(self):
+        """Test filtering tuples in MagiDict."""
+        md = MagiDict({"nums": (1, 2, 3, 4, 5)})
+        result = md.filter(lambda x: x > 2)
+        self.assertEqual(result, MagiDict({"nums": (3, 4, 5)}))
+
+    def test_filter_mixed_sequence_and_nested_dicts(self):
+        """Test filtering with mixed sequence and nested dict structures."""
+        md = MagiDict(
+            {"data": [{"id": 1, "val": 5}, {"id": 2, "val": 15}, {"id": 3, "val": 3}]}
+        )
+        result = md.filter(lambda x: x > 4, drop_empty=True)
+        self.assertEqual(len(result["data"]), 2)
+
+
+class TestFilterPreservesTypes(TestCase):
+    """Test that filtering preserves data types appropriately."""
+
+    def test_filter_preserves_magiddict_type(self):
+        """Test that filtered result is a MagiDict."""
+        md = MagiDict({"a": 1, "b": 2})
+        result = md.filter(lambda x: x > 0)
+        self.assertIsInstance(result, MagiDict)
+
+    def test_filter_nested_magiddict_type(self):
+        """Test that nested results are MagiDicts."""
+        md = MagiDict({"nested": {"a": 1, "b": 2}})
+        result = md.filter(lambda x: x > 0)
+        self.assertIsInstance(result["nested"], MagiDict)
+
+    def test_filter_preserves_list_type(self):
+        """Test that lists remain as lists."""
+        md = MagiDict({"items": [1, 2, 3]})
+        result = md.filter(lambda x: x > 1)
+        self.assertIsInstance(result["items"], list)
+
+
+class TestFilterComplexScenarios(TestCase):
+    """Test complex filtering scenarios."""
+
+    def test_filter_with_string_values(self):
+        """Test filtering with string values."""
+        md = MagiDict({"apple": "red", "banana": "yellow", "cherry": "red"})
+        result = md.filter(lambda v: v == "red")
+        self.assertEqual(result, MagiDict({"apple": "red", "cherry": "red"}))
+
+    def test_filter_with_mixed_types(self):
+        """Test filtering with mixed value types."""
+        md = MagiDict({"a": 1, "b": "text", "c": 2.5, "d": None})
+        result = md.filter(lambda x: isinstance(x, (int, float)) and x > 1)
+        self.assertEqual(result, MagiDict({"c": 2.5}))
+
+    def test_filter_all_items_removed(self):
+        """Test when all items are filtered out."""
+        md = MagiDict({"a": 1, "b": 2, "c": 3})
+        result = md.filter(lambda x: x > 100)
+        self.assertEqual(result, MagiDict())
+
+    def test_filter_all_items_kept(self):
+        """Test when all items pass the filter."""
+        md = MagiDict({"a": 1, "b": 2, "c": 3})
+        result = md.filter(lambda x: x > 0)
+        self.assertEqual(result, MagiDict({"a": 1, "b": 2, "c": 3}))
+
+    def test_filter_with_key_value_filtering_keys(self):
+        """Test filtering based on key values."""
+        md = MagiDict({"id_1": 100, "name_2": 200, "id_3": 300})
+        result = md.filter(lambda k, v: k.startswith("id"))
+        self.assertEqual(result, MagiDict({"id_1": 100, "id_3": 300}))
+
+    def test_filter_does_not_modify_original(self):
+        """Test that filter does not modify the original MagiDict."""
+        original = MagiDict({"a": 1, "b": 2, "c": 3})
+        filtered = original.filter(lambda x: x > 1)
+        self.assertEqual(original, MagiDict({"a": 1, "b": 2, "c": 3}))
+        self.assertEqual(filtered, MagiDict({"b": 2, "c": 3}))
+
+    def test_filter_with_boolean_values(self):
+        """Test filtering with boolean values."""
+        md = MagiDict({"active": True, "deleted": False, "enabled": True})
+        result = md.filter(lambda x: x is True)
+        self.assertEqual(result, MagiDict({"active": True, "enabled": True}))
+
+
+class TestFilterEdgeCases(TestCase):
+    """Test edge cases and special scenarios."""
+
+    def test_filter_with_zero_values(self):
+        """Test filtering with zero values (falsy but valid)."""
+        md = MagiDict({"a": 0, "b": 1, "c": 0, "d": 2})
+        result = md.filter(lambda x: x == 0)
+        self.assertEqual(result, MagiDict({"a": 0, "c": 0}))
+
+    def test_filter_with_empty_string(self):
+        """Test filtering with empty string values."""
+        md = MagiDict({"a": "", "b": "text", "c": ""})
+        result = md.filter(lambda x: x != "")
+        self.assertEqual(result, MagiDict({"b": "text"}))
+
+    def test_filter_nested_with_none_values(self):
+        """Test filtering nested structures containing None."""
+        md = MagiDict({"data": {"a": None, "b": 1, "c": None, "d": 2}})
+        result = md.filter(None)
+        self.assertEqual(result, MagiDict({"data": {"b": 1, "d": 2}}))
+
+    def test_filter_list_of_lists(self):
+        """Test filtering nested lists."""
+        md = MagiDict({"matrix": [[1, 2], [3, 4]]})
+        result = md.filter(lambda x: x > 2, drop_empty=True)
+        self.assertEqual(len(result["matrix"]), 1)
+        self.assertEqual(result["matrix"][0], [3, 4])
+
+    def test_filter_empty_nested_list(self):
+        """Test filtering that results in empty nested lists."""
+        md = MagiDict({"items": [1, 2, 3]})
+        result = md.filter(lambda x: x > 10)
+        self.assertEqual(result, MagiDict({"items": []}))
+
+    def test_filter_with_negative_numbers(self):
+        """Test filtering with negative numbers."""
+        md = MagiDict({"a": -5, "b": 10, "c": -2, "d": 0})
+        result = md.filter(lambda x: x > 0)
+        self.assertEqual(result, MagiDict({"b": 10}))
+
+    def test_filter_preserves_order(self):
+        """Test that filter preserves the order of items."""
+        md = MagiDict({"z": 1, "y": 2, "x": 3})
+        result = md.filter(lambda x: x > 0)
+        keys = list(result.keys())
+        self.assertEqual(keys, ["z", "y", "x"])
+
+    def test_filter_nested_empty_after_filtering(self):
+        """Test nested dict becomes empty after filtering."""
+        md = MagiDict({"outer": {"a": 10, "b": 20}, "keep": {"x": 1}})
+        result = md.filter(lambda x: x < 5, drop_empty=False)
+        self.assertEqual(len(result["outer"]), 0)
+        self.assertEqual(result["keep"], MagiDict({"x": 1}))
+
+    def test_list_of_lists_of_lists(self):
+        """Test filtering with deeply nested lists."""
+        md = MagiDict(
+            {
+                "a": [[[1, 2], [3, 4]], [[5, 6], [7, 8]]],
+                "b": [1, [2, [3, 4]]],
+                "c": [[[[9]]]],
+            }
+        )
+
+        result = md.filter(lambda x: x > 4)
+        result_drop_empty = md.filter(lambda x: x > 4, drop_empty=True)
+
+        expected = MagiDict(
+            {"a": [[[], []], [[5, 6], [7, 8]]], "b": [[[]]], "c": [[[[9]]]]}
+        )
+
+        expected_drop_empty = MagiDict(
+             {"a": [[[5, 6], [7, 8]]], "c": [[[[9]]]]}
+        )
+
+        self.assertEqual(result, expected)
+        self.assertEqual(result_drop_empty, expected_drop_empty)
+
+
+if __name__ == "__main__":
+    main()
