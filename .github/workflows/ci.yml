@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -51,7 +51,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run benchmarks
-        run: pytest tests/benchmark --benchmark-only --benchmark-save=main.json
+        run: pip intall pytest-benchmark
+          pytest tests/benchmark --benchmark-only --benchmark-save=main.json
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4

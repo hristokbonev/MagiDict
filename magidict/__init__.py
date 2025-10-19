@@ -1,6 +1,6 @@
 """MagiDict package initialization."""
 
-from typing import Any
+from typing import Any, Dict
 
 try:
     from ._magidict import MagiDict
@@ -29,7 +29,7 @@ except ImportError:
         """Fallback magi_load - requires core module"""
         raise ImportError("magi_load requires the core module to be available")
 
-    def enchant(d: dict) -> MagiDict:
+    def enchant(d: Dict[Any, Any]) -> MagiDict:
         """Fallback enchant - requires core module"""
         raise ImportError("enchant requires the core module to be available")
 
