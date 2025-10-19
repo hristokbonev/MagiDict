@@ -313,12 +313,15 @@ regular_dict = md.disenchant()
 type(regular_dict)  # <class 'dict'>
 ```
 
-#### `filter(function)`
+#### `filter(function, drop_empty=False)`
 
 Returns a new `MagiDict` containing only the items for which the provided function returns `True`.
 
 **Parameters:**
-- `function`: A function that takes a key-value pair and returns `True` to keep the item, or `False` to exclude it.
+
+- `function`: A function that takes either one argument (value) or two arguments (key, value) and returns `True` or `False`. If function is `None`,
+  it defaults to filtering out items with `None` values.
+- `drop_empty`: If `True`, removes empty data structures from the result (default: `False`)
 
 **Returns:** A new `MagiDict` with filtered items
 
@@ -335,6 +338,7 @@ filtered_md = md.filter(lambda k, v: v % 2 == 1)
 Searches for the first occurrence of the specified key in the `MagiDict` and its nested structures, returning the corresponding value if found.
 
 **Parameters:**
+
 - `key`: The key to search for
 
 **Returns:** The value associated with the key, or raises `KeyError` if not found
@@ -351,6 +355,7 @@ value = md.search_key('target_key')  # 'found_value'
 Searches for all occurrences of the specified key in the `MagiDict` and its nested structures, a list of values corresponding to the found keys.
 
 **Parameters:**
+
 - `keys`: The key to search for
 
 **Returns:** A list of values associated with the found keys
