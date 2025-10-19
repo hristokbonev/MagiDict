@@ -875,7 +875,7 @@ class TestMagiDict(TestCase):
         self.assertEqual(md.b.c[1].d, 2)
         self.assertEqual(md_deepcopy.b.c[1].d, 99)
 
-    def test_chained_access_on_non_dict_value_raises_attribute_error(self):
+    def test_chained_access_on_non_dict_value_raises_attribute_error_2(self):
         """Accessing attributes on a non-dict value should raise AttributeError."""
         md = MagiDict({"a": 42, "b": "hello"})
         with self.assertRaises(AttributeError):
@@ -5884,7 +5884,7 @@ class TestNoneValues(TestCase):
         self.assertTrue(getattr(result, "_from_none", False))
 
 
-class TestEdgeCases(TestCase):
+class TestEdgeCasesMore(TestCase):
     """Test edge cases and special scenarios."""
 
     def test_empty_magidict(self):
