@@ -1,10 +1,3 @@
-"""Top-level package for magidict.
-
-This module prefers to import a compiled C extension `_magidict` when
-available for performance. If not built, it falls back to the pure-Python
-implementation in :mod:`.core`.
-"""
-
 import sys
 import warnings
 from typing import Any
