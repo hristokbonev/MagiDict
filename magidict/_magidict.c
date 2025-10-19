@@ -220,40 +220,83 @@ static PyObject *MagiDict_HookWithMemo(PyObject *item, PyObject *memo) {
     }
     else if (PyTuple_Check(item)) {
         Py_ssize_t size = PyTuple_Size(item);
-        PyObject *hooked_tuple = PyTuple_New(size);
-        if (hooked_tuple == NULL) {
-            Py_DECREF(item_id);
-            return NULL;
-        }
+        
+        // Check if this is a namedtuple (has _fields attribute)
+        PyObject *fields = PyObject_GetAttrString((PyObject *)Py_TYPE(item), "_fields");
+        int is_namedtuple = (fields != NULL);
+        Py_XDECREF(fields);
+        PyErr_Clear();  // Clear any AttributeError from _fields lookup
+        
+        if (is_namedtuple) {
+            // For namedtuples, create a new instance by calling the type
+            PyObject *args = PyTuple_New(size);
+            if (args == NULL) {
+                Py_DECREF(item_id);
+                return NULL;
+            }
+            
+            // Add to memo before recursing
+            PyDict_SetItem(memo, item_id, item);
+            
+            for (Py_ssize_t i = 0; i < size; i++) {
+                PyObject *elem = PyTuple_GetItem(item, i);
+                if (elem == NULL) {
+                    Py_DECREF(args);
+                    Py_DECREF(item_id);
+                    return NULL;
+                }
+                PyObject *hooked = MagiDict_HookWithMemo(elem, memo);
+                if (hooked == NULL) {
+                    Py_DECREF(args);
+                    Py_DECREF(item_id);
+                    return NULL;
+                }
+                PyTuple_SET_ITEM(args, i, hooked);  // Steals reference
+            }
+            
+            // Call the namedtuple type to create new instance
+            result = PyObject_CallObject((PyObject *)Py_TYPE(item), args);
+            Py_DECREF(args);
+            
+            if (result == NULL) {
+                Py_DECREF(item_id);
+                return NULL;
+            }
+            
+            // Update memo with the result
+            PyDict_SetItem(memo, item_id, result);
+        } else {
+            // Regular tuple
+            PyObject *hooked_tuple = PyTuple_New(size);
+            if (hooked_tuple == NULL) {
+                Py_DECREF(item_id);
+                return NULL;
+            }
 
-        int memo_ret = PyDict_SetItem(memo, item_id, hooked_tuple);
-        if (memo_ret < 0) {
-            Py_DECREF(hooked_tuple);
-            Py_DECREF(item_id);
-            return NULL;
-        }
+            int memo_ret = PyDict_SetItem(memo, item_id, hooked_tuple);
+            if (memo_ret < 0) {
+                Py_DECREF(hooked_tuple);
+                Py_DECREF(item_id);
+                return NULL;
+            }
 
-        for (Py_ssize_t i = 0; i < size; i++) {
-            PyObject *elem = PyTuple_GetItem(item, i);
-            if (elem == NULL) {
-                Py_DECREF(hooked_tuple);
-                Py_DECREF(item_id);
-                return NULL;
+            for (Py_ssize_t i = 0; i < size; i++) {
+                PyObject *elem = PyTuple_GetItem(item, i);
+                if (elem == NULL) {
+                    Py_DECREF(hooked_tuple);
+                    Py_DECREF(item_id);
+                    return NULL;
+                }
+                PyObject *hooked = MagiDict_HookWithMemo(elem, memo);
+                if (hooked == NULL) {
+                    Py_DECREF(hooked_tuple);
+                    Py_DECREF(item_id);
+                    return NULL;
+                }
+                PyTuple_SET_ITEM(hooked_tuple, i, hooked);  // Steals reference
             }
-            PyObject *hooked = MagiDict_HookWithMemo(elem, memo);
-            if (hooked == NULL) {
-                Py_DECREF(hooked_tuple);
-                Py_DECREF(item_id);
-                return NULL;
-            }
-            int ret = PyTuple_SetItem(hooked_tuple, i, hooked);
-            if (ret < 0) {
-                Py_DECREF(hooked_tuple);
-                Py_DECREF(item_id);
-                return NULL;
-            }
+            result = hooked_tuple;
         }
-        result = hooked_tuple;
     }
     else {
         Py_INCREF(item);
@@ -385,31 +428,81 @@ static int MagiDict_contains(MagiDict *self, PyObject *key) {
 // ============================================================================
 
 static PyObject *MagiDict_getattr(MagiDict *self, PyObject *name) {
+    const char *name_str = NULL;
+    
+    // Get string representation of name
     if (PyUnicode_Check(name)) {
-        const char *name_str = PyUnicode_AsUTF8(name);
-        if (name_str) {
-            if (strcmp(name_str, "_from_none") == 0) {
-                return PyBool_FromLong(self->from_none);
-            }
-            if (strcmp(name_str, "_from_missing") == 0) {
-                return PyBool_FromLong(self->from_missing);
-            }
+        name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL) {
+            return NULL;
+        }
+        
+        // Check for special flag attributes first
+        if (strcmp(name_str, "_from_none") == 0) {
+            return PyBool_FromLong(self->from_none);
+        }
+        if (strcmp(name_str, "_from_missing") == 0) {
+            return PyBool_FromLong(self->from_missing);
         }
     }
 
-    PyObject *value = PyDict_GetItemWithError(self->dict, name);
-    if (value != NULL) {
+    // Check if key exists in dictionary
+    int contains = PyDict_Contains(self->dict, name);
+    if (contains == -1) {
+        return NULL;  // Error occurred
+    }
+    
+    if (contains) {
+        PyObject *value = PyDict_GetItem(self->dict, name);
         if (value == Py_None) {
             return create_empty_magi_dict(1);
+        }
+        // For dicts that aren't MagiDicts, convert them lazily
+        if (PyDict_Check(value) && !PyObject_TypeCheck(value, &MagiDictType)) {
+            PyObject *memo = PyDict_New();
+            if (memo == NULL) return NULL;
+            PyObject *hooked = MagiDict_HookWithMemo(value, memo);
+            Py_DECREF(memo);
+            if (hooked == NULL) return NULL;
+            // Replace the value in the dictionary
+            PyDict_SetItem(self->dict, name, hooked);
+            return hooked;  // Return new ref
         }
         Py_INCREF(value);
         return value;
     }
 
-    if (PyErr_Occurred()) {
-        PyErr_Clear();
+    // Check if it's a method in tp_methods
+    if (name_str != NULL) {
+        PyMethodDef *meth = MagiDictType.tp_methods;
+        while (meth && meth->ml_name) {
+            if (strcmp(name_str, meth->ml_name) == 0) {
+                // Found the method, create bound method
+                PyObject *func = PyCFunction_NewEx(meth, (PyObject *)self, NULL);
+                return func;  // Returns new reference
+            }
+            meth++;
+        }
+        
+        // Check for standard object attributes (__class__, __dict__, etc.)
+        // These are handled by the type system, so we need special handling
+        if (strcmp(name_str, "__dict__") == 0) {
+            // Return instance dict if it exists
+            PyObject **dictptr = _PyObject_GetDictPtr((PyObject *)self);
+            if (dictptr && *dictptr) {
+                Py_INCREF(*dictptr);
+                return *dictptr;
+            }
+            // Otherwise return empty dict
+            return PyDict_New();
+        }
+        if (strcmp(name_str, "__class__") == 0) {
+            Py_INCREF(Py_TYPE(self));
+            return (PyObject *)Py_TYPE(self);
+        }
     }
-
+    
+    // Not found anywhere, return empty MagiDict for missing keys
     return create_empty_magi_dict(2);
 }
 
@@ -1035,6 +1128,230 @@ static PyObject *MagiDict_search_keys(MagiDict *self, PyObject *args) {
 }
 
 // ============================================================================
+// Additional Dict Methods
+// ============================================================================
+
+static PyObject *MagiDict_get(MagiDict *self, PyObject *args) {
+    PyObject *key;
+    PyObject *default_val = Py_None;
+    
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_val)) {
+        return NULL;
+    }
+    
+    PyObject *value = PyDict_GetItemWithError(self->dict, key);
+    if (value != NULL) {
+        Py_INCREF(value);
+        return value;
+    }
+    
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    
+    Py_INCREF(default_val);
+    return default_val;
+}
+
+static PyObject *MagiDict_pop(MagiDict *self, PyObject *args) {
+    if (self->from_none || self->from_missing) {
+        PyErr_SetString(PyExc_TypeError, "Cannot modify NoneType or missing keys.");
+        return NULL;
+    }
+    
+    PyObject *key;
+    PyObject *default_val = NULL;
+    
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_val)) {
+        return NULL;
+    }
+    
+    PyObject *value = PyDict_GetItemWithError(self->dict, key);
+    if (value != NULL) {
+        Py_INCREF(value);
+        if (PyDict_DelItem(self->dict, key) < 0) {
+            Py_DECREF(value);
+            return NULL;
+        }
+        return value;
+    }
+    
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    
+    if (default_val != NULL) {
+        Py_INCREF(default_val);
+        return default_val;
+    }
+    
+    PyErr_SetObject(PyExc_KeyError, key);
+    return NULL;
+}
+
+static PyObject *MagiDict_copy_method(MagiDict *self, PyObject *args) {
+    (void)args;
+    
+    MagiDict *copied = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+    if (copied == NULL) return NULL;
+    
+    copied->dict = PyDict_Copy(self->dict);
+    if (copied->dict == NULL) {
+        Py_DECREF(copied);
+        return NULL;
+    }
+    
+    copied->from_none = self->from_none;
+    copied->from_missing = self->from_missing;
+    
+    return (PyObject *)copied;
+}
+
+static PyObject *MagiDict_clear(MagiDict *self, PyObject *args) {
+    (void)args;
+    
+    if (self->from_none || self->from_missing) {
+        PyErr_SetString(PyExc_TypeError, "Cannot modify NoneType or missing keys.");
+        return NULL;
+    }
+    
+    PyDict_Clear(self->dict);
+    Py_RETURN_NONE;
+}
+
+static PyObject *MagiDict_setdefault(MagiDict *self, PyObject *args) {
+    if (self->from_none || self->from_missing) {
+        PyErr_SetString(PyExc_TypeError, "Cannot modify NoneType or missing keys.");
+        return NULL;
+    }
+    
+    PyObject *key;
+    PyObject *default_val = Py_None;
+    
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_val)) {
+        return NULL;
+    }
+    
+    PyObject *value = PyDict_GetItemWithError(self->dict, key);
+    if (value != NULL) {
+        Py_INCREF(value);
+        return value;
+    }
+    
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    
+    // Key doesn't exist, set it with hooked default value
+    PyObject *memo = PyDict_New();
+    if (memo == NULL) return NULL;
+    
+    PyObject *hooked = MagiDict_HookWithMemo(default_val, memo);
+    Py_DECREF(memo);
+    
+    if (hooked == NULL) return NULL;
+    
+    if (PyDict_SetItem(self->dict, key, hooked) < 0) {
+        Py_DECREF(hooked);
+        return NULL;
+    }
+    
+    return hooked;  // Return new reference
+}
+
+static PyObject *MagiDict_popitem(MagiDict *self, PyObject *args) {
+    (void)args;
+    
+    if (self->from_none || self->from_missing) {
+        PyErr_SetString(PyExc_TypeError, "Cannot modify NoneType or missing keys.");
+        return NULL;
+    }
+    
+    return PyDict_Type.tp_methods[0].ml_meth((PyObject *)self->dict, NULL);
+}
+
+static PyObject *MagiDict_keys(MagiDict *self, PyObject *args) {
+    (void)args;
+    return PyDict_Keys(self->dict);
+}
+
+static PyObject *MagiDict_values(MagiDict *self, PyObject *args) {
+    (void)args;
+    return PyDict_Values(self->dict);
+}
+
+static PyObject *MagiDict_items(MagiDict *self, PyObject *args) {
+    (void)args;
+    return PyDict_Items(self->dict);
+}
+
+// ============================================================================
+// Update Method
+// ============================================================================
+
+static PyObject *MagiDict_update(MagiDict *self, PyObject *args, PyObject *kwargs) {
+    if (self->from_none || self->from_missing) {
+        PyErr_SetString(PyExc_TypeError, "Cannot modify NoneType or missing keys.");
+        return NULL;
+    }
+
+    PyObject *other = NULL;
+    if (PyTuple_Size(args) > 0) {
+        other = PyTuple_GetItem(args, 0);
+    }
+
+    PyObject *memo = PyDict_New();
+    if (memo == NULL) return NULL;
+
+    // Update from positional argument
+    if (other != NULL) {
+        if (PyDict_Check(other)) {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(other, &pos, &key, &value)) {
+                PyObject *hooked = MagiDict_HookWithMemo(value, memo);
+                if (hooked == NULL) {
+                    Py_DECREF(memo);
+                    return NULL;
+                }
+                int ret = PyDict_SetItem(self->dict, key, hooked);
+                Py_DECREF(hooked);
+                if (ret < 0) {
+                    Py_DECREF(memo);
+                    return NULL;
+                }
+            }
+        } else {
+            Py_DECREF(memo);
+            PyErr_SetString(PyExc_TypeError, "update() argument must be a dict");
+            return NULL;
+        }
+    }
+
+    // Update from keyword arguments
+    if (kwargs != NULL) {
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(kwargs, &pos, &key, &value)) {
+            PyObject *hooked = MagiDict_HookWithMemo(value, memo);
+            if (hooked == NULL) {
+                Py_DECREF(memo);
+                return NULL;
+            }
+            int ret = PyDict_SetItem(self->dict, key, hooked);
+            Py_DECREF(hooked);
+            if (ret < 0) {
+                Py_DECREF(memo);
+                return NULL;
+            }
+        }
+    }
+
+    Py_DECREF(memo);
+    Py_RETURN_NONE;
+}
+
+// ============================================================================
 // Method Definitions
 // ============================================================================
 
@@ -1043,6 +1360,8 @@ static PyMethodDef MagiDict_methods[] = {
      "Safe get method that returns empty MagiDict for missing keys"},
     {"mg", (PyCFunction)MagiDict_mget, METH_VARARGS,
      "Shorthand for mget"},
+    {"update", (PyCFunction)MagiDict_update, METH_VARARGS | METH_KEYWORDS,
+     "Update dictionary with hooked values"},
     {"disenchant", (PyCFunction)MagiDict_disenchant, METH_NOARGS,
      "Convert MagiDict and nested MagiDicts back to standard dicts"},
     {"__dir__", (PyCFunction)MagiDict_dir, METH_NOARGS,
