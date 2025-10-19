@@ -1,3 +1,6 @@
+"""Core implementation of MagiDict, a recursive dictionary with safe attribute access
+and automatic conversion of nested dictionaries into MagiDicts."""
+
 import json
 from copy import deepcopy
 from typing import Any, Iterable, List, Mapping, Sequence, Union
