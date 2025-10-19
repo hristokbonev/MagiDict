@@ -911,10 +911,14 @@ static PyObject *MagiDict_search_keys(MagiDict *self, PyObject *args) {
                 Py_DECREF(results);
                 return NULL;
             }
-            if (PyList_Extend(results, nested_results) < 0) {
-                Py_DECREF(nested_results);
-                Py_DECREF(results);
-                return NULL;
+            Py_ssize_t nested_len = PyList_Size(nested_results);
+            for (Py_ssize_t j = 0; j < nested_len; j++) {
+                PyObject *item = PyList_GetItem(nested_results, j);
+                if (PyList_Append(results, item) < 0) {
+                    Py_DECREF(nested_results);
+                    Py_DECREF(results);
+                    return NULL;
+                }
             }
             Py_DECREF(nested_results);
         }
@@ -1001,10 +1005,14 @@ static PyObject *MagiDict_search_keys(MagiDict *self, PyObject *args) {
                         Py_DECREF(results);
                         return NULL;
                     }
-                    if (PyList_Extend(results, nested_results) < 0) {
-                        Py_DECREF(nested_results);
-                        Py_DECREF(results);
-                        return NULL;
+                    Py_ssize_t nested_len = PyList_Size(nested_results);
+                    for (Py_ssize_t j = 0; j < nested_len; j++) {
+                        PyObject *item = PyList_GetItem(nested_results, j);
+                        if (PyList_Append(results, item) < 0) {
+                            Py_DECREF(nested_results);
+                            Py_DECREF(results);
+                            return NULL;
+                        }
                     }
                     Py_DECREF(nested_results);
                 }
