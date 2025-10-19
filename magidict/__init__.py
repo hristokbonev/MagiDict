@@ -1,5 +1,5 @@
-import sys
-import warnings
+"""MagiDict package initialization."""
+
 from typing import Any
 
 try:

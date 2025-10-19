@@ -1,6 +1,7 @@
-from setuptools import setup, Extension, find_packages
+"""Setup script for the magidict package."""
+
 import sys
-import sysconfig
+from setuptools import setup, Extension, find_packages
 
 extra_compile_args = ["/W4"] if sys.platform == "win32" else ["-Wall", "-Wextra", "-O3"]
 extra_link_args = []
