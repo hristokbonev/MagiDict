@@ -506,10 +506,10 @@ class MagiDict(dict):
                             new_seq.append(item)
             if new_seq or not drop_empty:
                 try:
-                    return type(seq)(new_seq)  # type: ignore[call-arg]
+                    return type(seq)(new_seq)  # type: ignore
                 except TypeError:
                     return new_seq
-            return
+            return None
 
         filtered: MagiDict = MagiDict()
 
