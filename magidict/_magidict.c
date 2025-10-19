@@ -675,9 +675,7 @@ static PyObject *MagiDict_setstate(MagiDict *self, PyObject *state) {
     Py_RETURN_NONE;
 }
 
-static PyObject *MagiDict_reduce_ex(MagiDict *self, PyObject *args) {
-    return PyObject_CallMethod((PyObject *)self, "__reduce_ex__", "i", 2);
-}
+
 
 // ============================================================================
 // Method Definitions
@@ -709,6 +707,10 @@ static PySequenceMethods MagiDict_as_sequence = {
     .sq_contains = (objobjproc)MagiDict_contains,
 };
 
+static PyNumberMethods MagiDict_as_number = {
+    .nb_bool = (inquiry)MagiDict_bool,
+};
+
 // ============================================================================
 // Type Definition
 // ============================================================================
@@ -728,8 +730,8 @@ static PyTypeObject MagiDictType = {
     .tp_setattro = (setattrofunc)MagiDict_setattr,
     .tp_as_mapping = &MagiDict_as_mapping,
     .tp_as_sequence = &MagiDict_as_sequence,
+    .tp_as_number = &MagiDict_as_number,
     .tp_methods = MagiDict_methods,
-    .nb_bool = (inquiry)MagiDict_bool,
 };
 
 // ============================================================================
@@ -746,12 +748,6 @@ static PyModuleDef magidictmodule = {
 
 PyMODINIT_FUNC PyInit__magidict(void) {
     PyObject *m;
-
-    // Update NumberMethods structure
-    PyType_Slot slots[] = {
-        {Py_nb_bool, (inquiry)MagiDict_bool},
-        {0, NULL}
-    };
 
     if (PyType_Ready(&MagiDictType) < 0)
         return NULL;
