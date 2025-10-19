@@ -1037,7 +1037,32 @@ static PyObject *magidict_pop(MagiDictObject *self, PyObject *args)
         return NULL;
     }
 
-    return PyDict_Type.tp_methods[0].ml_meth((PyObject *)self, args);
+    PyObject *key, *default_value = NULL;
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_value))
+    {
+        return NULL;
+    }
+
+    PyObject *value = PyDict_GetItem((PyObject *)self, key);
+    if (value == NULL)
+    {
+        if (default_value != NULL)
+        {
+            Py_INCREF(default_value);
+            return default_value;
+        }
+        PyErr_SetObject(PyExc_KeyError, key);
+        return NULL;
+    }
+
+    Py_INCREF(value);
+    if (PyDict_DelItem((PyObject *)self, key) < 0)
+    {
+        Py_DECREF(value);
+        return NULL;
+    }
+
+    return value;
 }
 
 /* popitem method */
@@ -1385,7 +1410,7 @@ static PyObject *magidict_reduce_ex(MagiDictObject *self, PyObject *protocol)
     return result;
 }
 
-/* filter method - complex implementation */
+/* filter method */
 static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *function = Py_None;
@@ -1556,7 +1581,7 @@ static PyMappingMethods magidict_as_mapping = {
 /* Type definition */
 static PyTypeObject MagiDictType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-        .tp_name = "magidict_c.MagiDict",
+        .tp_name = "magidict._magidict.MagiDict",
     .tp_doc = PyDoc_STR("A dictionary with safe attribute access and recursive conversion"),
     .tp_basicsize = sizeof(MagiDictObject),
     .tp_itemsize = 0,
@@ -1695,14 +1720,14 @@ static PyMethodDef module_methods[] = {
 /* Module definition */
 static PyModuleDef magidictmodule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "magidict_c",
+    .m_name = "_magidict",
     .m_doc = PyDoc_STR("MagiDict - A recursive dictionary with safe attribute access"),
     .m_size = -1,
     .m_methods = module_methods,
 };
 
 /* Module initialization */
-PyMODINIT_FUNC PyInit_magidict_c(void)
+PyMODINIT_FUNC PyInit__magidict(void)
 {
     PyObject *m;
 
@@ -1726,5 +1751,6 @@ PyMODINIT_FUNC PyInit_magidict_c(void)
         return NULL;
     }
 
+    /* Add module-level functions */
     return m;
 }
