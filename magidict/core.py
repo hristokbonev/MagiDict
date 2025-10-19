@@ -509,6 +509,7 @@ class MagiDict(dict):
                     return type(seq)(new_seq)
                 except TypeError:
                     return new_seq
+            return None
 
         filtered: MagiDict = MagiDict()
 
