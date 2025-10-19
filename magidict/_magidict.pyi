@@ -9,6 +9,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    SupportsIndex,
     Tuple,
     TypeVar,
     Union,
@@ -61,7 +62,7 @@ class MagiDict(Dict[_KT, _VT]):
     def __getstate__(self) -> Dict[str, Any]: ...
     def __setstate__(self, state: Dict[str, Any]) -> None: ...
     def __reduce_ex__(
-        self, protocol: int
+        self, protocol: SupportsIndex
     ) -> Tuple[type, Tuple[()], Dict[str, Any], None, None]: ...
     def update(self, *args: Any, **kwargs: Any) -> None:
         """Recursively convert nested dicts into MagiDicts on update."""
@@ -75,45 +76,28 @@ class MagiDict(Dict[_KT, _VT]):
         """Overrides dict.setdefault to ensure the default value is hooked."""
         ...
 
+    @overload
     @classmethod
-    def fromkeys(cls, seq: Iterable[_KT], value: Optional[_VT] = None) -> Self:
-        """Overrides dict.fromkeys to ensure the value is hooked."""
-        ...
-
-    def pop(self, key: _KT) -> _VT: ...
+    def fromkeys(cls, __iterable: Iterable[_KT]) -> Self: ...
     @overload
-    def pop(self, key: _KT, default: _VT) -> _VT: ...
+    @classmethod
+    def fromkeys(cls, __iterable: Iterable[_KT], __value: _VT) -> Self: ...
     @overload
-    def pop(self, key: _KT, default: _T) -> Union[_VT, _T]: ...
+    def pop(self, __key: _KT) -> _VT: ...
+    @overload
+    def pop(self, __key: _KT, __default: _VT) -> _VT: ...
+    @overload
+    def pop(self, __key: _KT, __default: _T) -> Union[_VT, _T]: ...
     def popitem(self) -> Tuple[_KT, _VT]: ...
     def clear(self) -> None: ...
     @overload
     def mget(self, key: _KT) -> Union[_VT, Self]: ...
     @overload
     def mget(self, key: _KT, default: _T) -> Union[_VT, _T]: ...
-    def mget(self, key: _KT, default: Any = ...) -> Any:
-        """Safe get method that mimics attribute-style access.
-        If the key doesn't exist, returns an empty MagiDict instead of raising KeyError.
-        If the key exists but its value is None, returns an empty MagiDict for safe chaining.
-
-        Parameters:
-            key: The key to retrieve.
-            default: The default value to return if the key is missing.
-
-        Returns:
-            The value associated with the key, or an empty MagiDict if the key is missing
-            or its value is None.
-        """
-        ...
-
     @overload
     def mg(self, key: _KT) -> Union[_VT, Self]: ...
     @overload
     def mg(self, key: _KT, default: _T) -> Union[_VT, _T]: ...
-    def mg(self, key: _KT, default: Any = ...) -> Any:
-        """Shorthand for mget() method."""
-        ...
-
     def strict_get(self, key: _KT) -> _VT:
         """Strict get method that mimics standard dict access.
 
@@ -188,7 +172,7 @@ class MagiDict(Dict[_KT, _VT]):
         """
         ...
 
-def magi_loads(s: str, **kwargs: Any) -> MagiDict:
+def magi_loads(s: str, **kwargs: Any) -> MagiDict[Any, Any]:
     """Deserialize a JSON string into a MagiDict instead of a dict.
 
     Parameters:
@@ -200,7 +184,7 @@ def magi_loads(s: str, **kwargs: Any) -> MagiDict:
     """
     ...
 
-def magi_load(fp: Any, **kwargs: Any) -> MagiDict:
+def magi_load(fp: Any, **kwargs: Any) -> MagiDict[Any, Any]:
     """Deserialize a JSON file-like object into a MagiDict instead of a dict.
 
     Parameters:
@@ -212,7 +196,7 @@ def magi_load(fp: Any, **kwargs: Any) -> MagiDict:
     """
     ...
 
-def enchant(d: Dict[Any, Any]) -> MagiDict:
+def enchant(d: Dict[Any, Any]) -> MagiDict[Any, Any]:
     """Convert a standard dictionary into a MagiDict.
 
     Parameters:
