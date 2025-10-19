@@ -20,6 +20,8 @@ from typing_extensions import Self
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 _T = TypeVar("_T")
+_K = TypeVar("_K")
+_V = TypeVar("_V")
 
 class MagiDict(Dict[_KT, _VT]):
     """A dictionary that supports attribute-style access and recursive conversion
@@ -79,13 +81,11 @@ class MagiDict(Dict[_KT, _VT]):
     @overload
     @classmethod
     def fromkeys(
-        cls, __iterable: Iterable[_KT_co], __value: None = ...
-    ) -> MagiDict[_KT_co, Optional[Any]]: ...
+        cls, __iterable: Iterable[_K], __value: None = ...
+    ) -> MagiDict[_K, Optional[Any]]: ...
     @overload
     @classmethod
-    def fromkeys(
-        cls, __iterable: Iterable[_KT_co], __value: _VT_co
-    ) -> MagiDict[_KT_co, _VT_co]: ...
+    def fromkeys(cls, __iterable: Iterable[_K], __value: _V) -> MagiDict[_K, _V]: ...
     @overload
     def pop(self, __key: _KT) -> _VT: ...
     @overload
