@@ -504,7 +504,11 @@ class MagiDict(dict):
                     else:
                         if function(item):
                             new_seq.append(item)
-            return new_seq
+            if new_seq or not drop_empty:
+                try:
+                    return type(seq)(new_seq)
+                except TypeError:
+                    return new_seq
 
         filtered: MagiDict = MagiDict()
 
