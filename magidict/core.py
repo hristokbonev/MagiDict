@@ -494,7 +494,7 @@ class MagiDict(dict):
                     if nested or not drop_empty:
                         new_seq.append(nested)
                 elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
-                    nested = filter_nested_seq(item, function, num_args, drop_empty)
+                    nested = filter_nested_seq(item, function, num_args, drop_empty)  # type: ignore[assignment]
                     if nested or not drop_empty:
                         new_seq.append(nested)
                 else:
@@ -524,7 +524,7 @@ class MagiDict(dict):
                     filtered[k] = nested
             elif isinstance(v, Sequence) and not isinstance(v, (str, bytes)):
                 new_seq: Union[List[Any], Sequence[Any]] = filter_nested_seq(
-                    v, function, num_args, drop_empty
+                    v, function, num_args, drop_empty  # type: ignore[assignment]
                 )
                 if new_seq or not drop_empty:
                     try:
