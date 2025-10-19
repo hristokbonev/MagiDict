@@ -51,7 +51,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run benchmarks
-        run: pip intall pytest-benchmark
+        run: pip install pytest-benchmark
           pytest tests/benchmark --benchmark-only --benchmark-save=main.json
 
       - name: Upload benchmark results
