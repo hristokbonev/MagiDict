@@ -1,5 +1,4 @@
 from typing import Any, Iterable, List, Mapping, Union, Sequence
-from .core import MagiDict
 
 class MagiDict(dict):
     def __init__(self, *args: Union[dict, Mapping], **kwargs: Any) -> None: ...
