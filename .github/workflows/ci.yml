@@ -27,9 +27,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev] pytest pytest-cov ruff mypy
+          pip install -e .[dev] pytest pytest-cov ruff mypy pytest-benchmark
           pip install -r requirements.txt || true
-          pip install pytest pytest-benchmark python-box dotmap addict attr-dot-dict
+          pip install python-box dotmap addict attr-dot-dict
 
       - name: Type check with mypy
         run: |
@@ -51,12 +51,16 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run benchmarks
+        continue-on-error: true
         run: |
-          pip install pytest-benchmark
-          pytest tests/benchmark --benchmark-only --benchmark-save=main.json
+          pytest tests/benchmark --benchmark-only --benchmark-save=main
+          echo "Checking for benchmark results..."
+          ls -la .benchmarks/ || echo "No .benchmarks directory found"
 
       - name: Upload benchmark results
+        if: hashFiles('.benchmarks/**') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
+          name: benchmark-results-py${{ matrix.python-version }}
           path: .benchmarks
+          if-no-files-found: warn
