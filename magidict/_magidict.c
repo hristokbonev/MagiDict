@@ -675,6 +675,345 @@ static PyObject *MagiDict_setstate(MagiDict *self, PyObject *state) {
     Py_RETURN_NONE;
 }
 
+// ============================================================================
+// Filter Method
+// ============================================================================
+
+static PyObject *MagiDict_filter(MagiDict *self, PyObject *args, PyObject *kwargs) {
+    PyObject *function = NULL;
+    int drop_empty = 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Op", (char *[]){ (char *)"function", (char *)"drop_empty", NULL }, &function, &drop_empty)) {
+        return NULL;
+    }
+
+    // If no function provided, default to filtering out None values
+    if (function == NULL) {
+        function = NULL;
+    }
+
+    // Create result MagiDict
+    MagiDict *result = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+    if (result == NULL) return NULL;
+
+    result->dict = PyDict_New();
+    if (result->dict == NULL) {
+        Py_DECREF(result);
+        return NULL;
+    }
+    result->from_none = 0;
+    result->from_missing = 0;
+
+    // Get number of parameters for the filter function
+    Py_ssize_t num_params = 1;
+    if (function != NULL && PyCallable_Check(function)) {
+        PyObject *sig = PyObject_GetAttrString(function, "__code__");
+        if (sig != NULL) {
+            PyObject *argcount = PyObject_GetAttrString(sig, "co_argcount");
+            if (argcount != NULL) {
+                num_params = PyLong_AsLong(argcount);
+                Py_DECREF(argcount);
+            }
+            Py_DECREF(sig);
+        }
+        PyErr_Clear();
+    }
+
+    // Iterate through dict items
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    while (PyDict_Next(self->dict, &pos, &key, &value)) {
+        int include = 1;
+
+        if (function == NULL) {
+            // Default: include non-None values
+            include = (value != Py_None) ? 1 : 0;
+        } else if (PyCallable_Check(function)) {
+            // Call function with appropriate arguments
+            PyObject *func_result = NULL;
+            if (num_params == 2) {
+                func_result = PyObject_CallFunctionObjArgs(function, key, value, NULL);
+            } else {
+                func_result = PyObject_CallFunctionObjArgs(function, value, NULL);
+            }
+
+            if (func_result == NULL) {
+                Py_DECREF(result);
+                return NULL;
+            }
+
+            include = PyObject_IsTrue(func_result);
+            Py_DECREF(func_result);
+
+            if (include == -1) {
+                Py_DECREF(result);
+                return NULL;
+            }
+        }
+
+        if (include) {
+            if (PyDict_SetItem(result->dict, key, value) < 0) {
+                Py_DECREF(result);
+                return NULL;
+            }
+        }
+    }
+
+    return (PyObject *)result;
+}
+
+// ============================================================================
+// Search Methods
+// ============================================================================
+
+static PyObject *MagiDict_search_key(MagiDict *self, PyObject *args, PyObject *kwargs) {
+    PyObject *search_key = NULL;
+    PyObject *default_val = Py_None;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", (char *[]){ (char *)"key", (char *)"default", NULL }, &search_key, &default_val)) {
+        return NULL;
+    }
+
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    // Check top-level keys first
+    while (PyDict_Next(self->dict, &pos, &key, &value)) {
+        int cmp = PyObject_RichCompareBool(key, search_key, Py_EQ);
+        if (cmp == -1) return NULL;
+        if (cmp == 1) {
+            Py_INCREF(value);
+            return value;
+        }
+    }
+
+    // Recursively search nested structures
+    pos = 0;
+    while (PyDict_Next(self->dict, &pos, &key, &value)) {
+        PyObject *result = NULL;
+
+        if (PyObject_TypeCheck(value, &MagiDictType)) {
+            result = PyObject_CallMethod(value, "search_key", "O", search_key);
+            if (result == NULL) return NULL;
+            if (result != Py_None) {
+                return result;
+            }
+            Py_DECREF(result);
+        }
+        else if (PyDict_Check(value)) {
+            // Convert dict to MagiDict and search
+            MagiDict *temp = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+            if (temp == NULL) return NULL;
+            temp->dict = PyDict_New();
+            if (temp->dict == NULL) {
+                Py_DECREF(temp);
+                return NULL;
+            }
+            temp->from_none = 0;
+            temp->from_missing = 0;
+            
+            if (PyDict_Update(temp->dict, value) < 0) {
+                Py_DECREF(temp);
+                return NULL;
+            }
+
+            result = PyObject_CallMethod((PyObject *)temp, "search_key", "O", search_key);
+            Py_DECREF(temp);
+            if (result == NULL) return NULL;
+            if (result != Py_None) {
+                return result;
+            }
+            Py_DECREF(result);
+        }
+        else if (PyList_Check(value)) {
+            Py_ssize_t list_len = PyList_Size(value);
+            for (Py_ssize_t i = 0; i < list_len; i++) {
+                PyObject *elem = PyList_GetItem(value, i);
+                if (elem == NULL) return NULL;
+
+                if (PyObject_TypeCheck(elem, &MagiDictType)) {
+                    result = PyObject_CallMethod(elem, "search_key", "O", search_key);
+                    if (result == NULL) return NULL;
+                    if (result != Py_None) {
+                        return result;
+                    }
+                    Py_DECREF(result);
+                }
+                else if (PyDict_Check(elem)) {
+                    MagiDict *temp = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+                    if (temp == NULL) return NULL;
+                    temp->dict = PyDict_New();
+                    if (temp->dict == NULL) {
+                        Py_DECREF(temp);
+                        return NULL;
+                    }
+                    temp->from_none = 0;
+                    temp->from_missing = 0;
+                    
+                    if (PyDict_Update(temp->dict, elem) < 0) {
+                        Py_DECREF(temp);
+                        return NULL;
+                    }
+
+                    result = PyObject_CallMethod((PyObject *)temp, "search_key", "O", search_key);
+                    Py_DECREF(temp);
+                    if (result == NULL) return NULL;
+                    if (result != Py_None) {
+                        return result;
+                    }
+                    Py_DECREF(result);
+                }
+            }
+        }
+    }
+
+    Py_INCREF(default_val);
+    return default_val;
+}
+
+static PyObject *MagiDict_search_keys(MagiDict *self, PyObject *args) {
+    PyObject *search_key = NULL;
+
+    if (!PyArg_ParseTuple(args, "O", &search_key)) {
+        return NULL;
+    }
+
+    PyObject *results = PyList_New(0);
+    if (results == NULL) return NULL;
+
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    // Check top-level keys
+    while (PyDict_Next(self->dict, &pos, &key, &value)) {
+        int cmp = PyObject_RichCompareBool(key, search_key, Py_EQ);
+        if (cmp == -1) {
+            Py_DECREF(results);
+            return NULL;
+        }
+        if (cmp == 1) {
+            if (PyList_Append(results, value) < 0) {
+                Py_DECREF(results);
+                return NULL;
+            }
+        }
+    }
+
+    // Recursively search nested structures
+    pos = 0;
+    while (PyDict_Next(self->dict, &pos, &key, &value)) {
+        PyObject *nested_results = NULL;
+
+        if (PyObject_TypeCheck(value, &MagiDictType)) {
+            nested_results = PyObject_CallMethod(value, "search_keys", "O", search_key);
+            if (nested_results == NULL) {
+                Py_DECREF(results);
+                return NULL;
+            }
+            if (PyList_Extend(results, nested_results) < 0) {
+                Py_DECREF(nested_results);
+                Py_DECREF(results);
+                return NULL;
+            }
+            Py_DECREF(nested_results);
+        }
+        else if (PyDict_Check(value)) {
+            MagiDict *temp = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+            if (temp == NULL) {
+                Py_DECREF(results);
+                return NULL;
+            }
+            temp->dict = PyDict_New();
+            if (temp->dict == NULL) {
+                Py_DECREF(temp);
+                Py_DECREF(results);
+                return NULL;
+            }
+            temp->from_none = 0;
+            temp->from_missing = 0;
+            
+            if (PyDict_Update(temp->dict, value) < 0) {
+                Py_DECREF(temp);
+                Py_DECREF(results);
+                return NULL;
+            }
+
+            nested_results = PyObject_CallMethod((PyObject *)temp, "search_keys", "O", search_key);
+            Py_DECREF(temp);
+            if (nested_results == NULL) {
+                Py_DECREF(results);
+                return NULL;
+            }
+            if (PyList_Extend(results, nested_results) < 0) {
+                Py_DECREF(nested_results);
+                Py_DECREF(results);
+                return NULL;
+            }
+            Py_DECREF(nested_results);
+        }
+        else if (PyList_Check(value)) {
+            Py_ssize_t list_len = PyList_Size(value);
+            for (Py_ssize_t i = 0; i < list_len; i++) {
+                PyObject *elem = PyList_GetItem(value, i);
+                if (elem == NULL) {
+                    Py_DECREF(results);
+                    return NULL;
+                }
+
+                if (PyObject_TypeCheck(elem, &MagiDictType)) {
+                    nested_results = PyObject_CallMethod(elem, "search_keys", "O", search_key);
+                    if (nested_results == NULL) {
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    if (PyList_Extend(results, nested_results) < 0) {
+                        Py_DECREF(nested_results);
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    Py_DECREF(nested_results);
+                }
+                else if (PyDict_Check(elem)) {
+                    MagiDict *temp = (MagiDict *)MagiDictType.tp_alloc(&MagiDictType, 0);
+                    if (temp == NULL) {
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    temp->dict = PyDict_New();
+                    if (temp->dict == NULL) {
+                        Py_DECREF(temp);
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    temp->from_none = 0;
+                    temp->from_missing = 0;
+                    
+                    if (PyDict_Update(temp->dict, elem) < 0) {
+                        Py_DECREF(temp);
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+
+                    nested_results = PyObject_CallMethod((PyObject *)temp, "search_keys", "O", search_key);
+                    Py_DECREF(temp);
+                    if (nested_results == NULL) {
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    if (PyList_Extend(results, nested_results) < 0) {
+                        Py_DECREF(nested_results);
+                        Py_DECREF(results);
+                        return NULL;
+                    }
+                    Py_DECREF(nested_results);
+                }
+            }
+        }
+    }
+
+    return results;
+
 
 
 // ============================================================================
@@ -694,6 +1033,12 @@ static PyMethodDef MagiDict_methods[] = {
      "Get state for pickling"},
     {"__setstate__", (PyCFunction)MagiDict_setstate, METH_O,
      "Set state from pickling"},
+    {"filter", (PyCFunction)MagiDict_filter, METH_VARARGS | METH_KEYWORDS,
+     "Filter items based on a function"},
+    {"search_key", (PyCFunction)MagiDict_search_key, METH_VARARGS | METH_KEYWORDS,
+     "Recursively search for a key in nested structures"},
+    {"search_keys", (PyCFunction)MagiDict_search_keys, METH_VARARGS,
+     "Recursively search for all occurrences of a key"},
     {NULL, NULL, 0, NULL}
 };
 
