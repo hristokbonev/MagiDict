@@ -108,7 +108,7 @@ md['users.0.email'] # KeyError
 ### 3. List or Tuple of Keys in Brackets
 
 Use a list or tuple of keys for deep sefe access.
-Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value. The caveat of this is that you cannot strictly access tuple keys that don't exist, as it will return an empty MagiDict instead of raising KeyError. For that, use the strict `strict_get()` method.
+Missing keys and keys with `None` values return an empty `MagiDict`. If the entire tuple is an actual key in the dict, it prioritizes and returns that value. The caveat of this is that you cannot strictly access tuple keys that don't exist, as it will return an empty `MagiDict` instead of raising `KeyError`. For that, use the strict `strict_get()` method.
 
 ```python
 md = MagiDict({
@@ -177,7 +177,7 @@ md.user['nickname']  # None
 
 ### 7. Standard Dictionary Behavior Preserved
 
-All standard `dict` methods and behaviors work as expected. For example missing keys with brackets raise KeyError as expected
+All standard `dict` methods and behaviors work as expected. For example missing keys with brackets raise `KeyError` as expected
 
 ### 8. Safe `mget()` Method
 
@@ -199,10 +199,10 @@ md.mg('1-invalid')  # 'value'
 md.mget('missing', 'default')  # 'default'
 ```
 
-### 9. Strict strict_get() Method
+### 9. Strict `strict_get()` Method
 
 `strict_get` is a strict version of `mget` that behaves like standard `dict` bracket access, raising `KeyError` for missing keys and returning `None` for keys with `None` values.
-The main usage is to strictly access tuple keys, where if they don't exist, it raises a KeyError, instead of returning an empty MagiDict.
+The main usage is to strictly access tuple keys, where if they don't exist, it raises a `KeyError`, instead of returning an empty `MagiDict`.
 
 ```python
 md = MagiDict({'user': {'name': 'Alice', ('tuple', 'key'): 'value'}, 'valid': None})
@@ -228,7 +228,7 @@ type(standard_dict)  # <class 'dict'>
 
 ### 11. Convert empty MagiDict to None
 
-Use `none()` to convert empty MagiDict instances that were created from `None` or missing keys back to `None`:
+Use `none()` to convert empty `MagiDict` instances that were created from `None` or missing keys back to `None`:
 
 ```python
 md = MagiDict({'user': None, 'age': 25})
@@ -657,7 +657,7 @@ name = md.user.profile.name or 'Unknown'
 
 MagiDict provides additional features:
 
-- Safe chaining with missing keys (returns empty MagiDict)
+- Safe chaining with missing keys (returns empty `MagiDict`)
 - Safe chaining with None values
 - Dot notation in bracket access
 - List/tuple of keys in bracket access with safe chaining
@@ -670,7 +670,7 @@ MagiDict provides additional features:
 
 ## Troubleshooting
 
-### KeyError on Dot Notation Access
+### `KeyError` on Dot Notation Access
 
 ```python
 md = MagiDict({'user': {'name': 'Alice'}})
@@ -691,7 +691,7 @@ md = MagiDict({'user': None})
 md.user.name = 'Alice' #TypeError
 ```
 
-### Unexpected Empty MagiDict
+### Unexpected Empty `MagiDict`
 
 ```python
 md = MagiDict({'value': None})
@@ -702,7 +702,7 @@ md.value  # MagiDict({})
 md['value']  # None
 ```
 
-### Empty MagiDict on Missing Tuple Key
+### Empty `MagiDict` on Missing Tuple Key
 
 ```python
 md = MagiDict({('tuple', 'key'): 'value'})
