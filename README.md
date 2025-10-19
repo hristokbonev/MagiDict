@@ -313,6 +313,55 @@ regular_dict = md.disenchant()
 type(regular_dict)  # <class 'dict'>
 ```
 
+#### `filter(function)`
+
+Returns a new `MagiDict` containing only the items for which the provided function returns `True`.
+
+**Parameters:**
+- `function`: A function that takes a key-value pair and returns `True` to keep the item, or `False` to exclude it.
+
+**Returns:** A new `MagiDict` with filtered items
+
+**Example:**
+
+```python
+md = MagiDict({'a': 1, 'b': 2, 'c': 3})
+filtered_md = md.filter(lambda k, v: v % 2 == 1)
+# filtered_md is MagiDict({'a': 1, 'c': 3})
+```
+
+#### `search_key(key)`
+
+Searches for the first occurrence of the specified key in the `MagiDict` and its nested structures, returning the corresponding value if found.
+
+**Parameters:**
+- `key`: The key to search for
+
+**Returns:** The value associated with the key, or raises `KeyError` if not found
+
+**Example:**
+
+```python
+md = MagiDict({'level1': {'level2': {'target_key': 'found_value'}}})
+value = md.search_key('target_key')  # 'found_value'
+```
+
+#### `search_keys(keys)`
+
+Searches for all occurrences of the specified key in the `MagiDict` and its nested structures, a list of values corresponding to the found keys.
+
+**Parameters:**
+- `keys`: The key to search for
+
+**Returns:** A list of values associated with the found keys
+
+**Example:**
+
+```python
+md = MagiDict({'level1': {'level2': {'key1': 'value1', 'key2': 'value2'}}})
+values = md.search_keys(['key1', 'key2'])  # ['value1', 'value2']
+```
+
 ### Standard Dict Methods
 
 All standard dictionary methods are supported:
