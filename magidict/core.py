@@ -481,7 +481,7 @@ class MagiDict(dict):
 
         def filter_nested_seq(
             seq: Sequence, function: Any, num_args: int, drop_empty: bool
-        ) -> List[Any]:
+        ) -> Union(List[Any], None):
             """Recursively filter nested sequences while preserving structure."""
             new_seq: List[Any] = []
             for i, item in enumerate(seq):
@@ -509,7 +509,7 @@ class MagiDict(dict):
                     return type(seq)(new_seq)
                 except TypeError:
                     return new_seq
-            return None
+            return
 
         filtered: MagiDict = MagiDict()
 
