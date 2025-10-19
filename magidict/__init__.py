@@ -3,7 +3,7 @@
 from typing import Any
 
 try:
-    from .core import MagiDict
+    from ._magidict import MagiDict
 
     _using_c_extension = True
 except ImportError:
