@@ -352,19 +352,22 @@ value = md.search_key('target_key')  # 'found_value'
 
 #### `search_keys(keys)`
 
-Searches for all occurrences of the specified key in the `MagiDict` and its nested structures, a list of values corresponding to the found keys.
+Searches for all occurrences of the specified key in the `MagiDict` and its nested structures, returning a list of values corresponding to the found keys.
 
 **Parameters:**
 
 - `keys`: The key to search for
 
-**Returns:** A list of values associated with the found keys
+**Returns:** A list of values associated with the found values
 
 **Example:**
 
 ```python
-md = MagiDict({'level1': {'level2': {'key1': 'value1', 'key2': 'value2'}}})
-values = md.search_keys(['key1', 'key2'])  # ['value1', 'value2']
+md = MagiDict({
+    'level1': {'target_key': 'value1'},
+    'level2': {'nested': {'target_key': 'value2'}}
+})
+values = md.search_keys('target_key')  # ['value1', 'value2']
 ```
 
 ### Standard Dict Methods
