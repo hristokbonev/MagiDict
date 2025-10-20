@@ -142,16 +142,27 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
             PyObject *fields = PyObject_GetAttrString(item, "_fields");
             if (fields != NULL)
             {
-                /* Named tuple - call type constructor with hooked values */
+                /* Named tuple - call type constructor with unpacked hooked values */
                 Py_DECREF(fields);
                 result = PyObject_CallObject((PyObject *)item_type, hooked_values);
                 Py_DECREF(hooked_values);
             }
             else
             {
-                /* Regular tuple subclass - call type constructor with hooked values */
+                /* Regular tuple subclass - call type constructor with hooked_values as single arg */
                 PyErr_Clear();
-                result = PyObject_CallObject((PyObject *)item_type, hooked_values);
+
+                /* Wrap hooked_values in a tuple to pass as single argument */
+                PyObject *args = PyTuple_Pack(1, hooked_values);
+                if (args == NULL)
+                {
+                    Py_DECREF(hooked_values);
+                    Py_DECREF(item_id);
+                    return NULL;
+                }
+
+                result = PyObject_CallObject((PyObject *)item_type, args);
+                Py_DECREF(args);
                 Py_DECREF(hooked_values);
             }
         }
