@@ -657,7 +657,28 @@ static int magidict_delitem(MagiDictObject *self, PyObject *key)
 /* __getattribute__ implementation */
 static PyObject *magidict_getattro(MagiDictObject *self, PyObject *name)
 {
-    /* Check for special flag attributes */
+    /* First try the generic attribute lookup. This ensures methods and
+       real attributes take precedence over dict keys (matching the Python
+       implementation where attribute access finds methods/attributes first).
+       If generic lookup returns a value, return it. If it raised an
+       AttributeError, clear it and fall back to treating the name as a
+       potential dict key (or return a protected empty MagiDict). */
+    PyObject *result = PyObject_GenericGetAttr((PyObject *)self, name);
+    if (result != NULL)
+    {
+        return result;
+    }
+
+    /* If the error wasn't AttributeError, propagate it */
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    {
+        return NULL;
+    }
+
+    /* Clear the AttributeError so fallback behaviour can run cleanly */
+    PyErr_Clear();
+
+    /* Now handle special flag attributes and dict-key fallback */
     const char *name_str = PyUnicode_AsUTF8(name);
     if (name_str != NULL)
     {
@@ -670,7 +691,7 @@ static PyObject *magidict_getattro(MagiDictObject *self, PyObject *name)
             return PyBool_FromLong(self->from_missing);
         }
 
-        /* Check if key exists in dict */
+        /* Check if key exists in dict and return its value if so */
         if (PyDict_Contains((PyObject *)self, name))
         {
             PyObject *value = PyDict_GetItem((PyObject *)self, name);
@@ -696,15 +717,7 @@ static PyObject *magidict_getattro(MagiDictObject *self, PyObject *name)
         }
     }
 
-    /* Try to get from type */
-    PyObject *result = PyObject_GenericGetAttr((PyObject *)self, name);
-    if (result != NULL)
-    {
-        return result;
-    }
-
-    /* Clear the AttributeError and return empty MagiDict */
-    PyErr_Clear();
+    /* Not an attribute and not a key -- return an empty protected MagiDict */
     return magidict_create_protected(0, 1);
 }
 
