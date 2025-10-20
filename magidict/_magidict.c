@@ -683,24 +683,29 @@ static PyObject *magidict_dir(MagiDictObject *self,
         Py_DECREF(keys);
     }
 
-    /* Add class attributes */
-    PyObject *type_dict = ((PyTypeObject *)Py_TYPE(self))->tp_dict;
-    if (type_dict != NULL)
+    /* Add class and base class attributes by traversing the MRO */
+    PyTypeObject *tp = Py_TYPE(self);
+    while (tp != NULL)
     {
-        PyObject *type_keys = PyDict_Keys(type_dict);
-        if (type_keys != NULL)
+        PyObject *type_dict = tp->tp_dict;
+        if (type_dict != NULL)
         {
-            Py_ssize_t size = PyList_Size(type_keys);
-            for (Py_ssize_t i = 0; i < size; i++)
+            PyObject *type_keys = PyDict_Keys(type_dict);
+            if (type_keys != NULL)
             {
-                PyObject *key = PyList_GetItem(type_keys, i);
-                if (PySequence_Contains(result, key) != 1)
+                Py_ssize_t size = PyList_Size(type_keys);
+                for (Py_ssize_t i = 0; i < size; i++)
                 {
-                    PyList_Append(result, key);
+                    PyObject *key = PyList_GetItem(type_keys, i);
+                    if (PySequence_Contains(result, key) != 1)
+                    {
+                        PyList_Append(result, key);
+                    }
                 }
+                Py_DECREF(type_keys);
             }
-            Py_DECREF(type_keys);
         }
+        tp = tp->tp_base;
     }
 
     /* Sort the list */
@@ -1006,12 +1011,12 @@ static PyObject *magidict_copy(MagiDictObject *self,
     if (dict_copy == NULL)
         return NULL;
 
-    MagiDictObject *new_copy = (MagiDictObject *)PyObject_CallFunctionObjArgs(
-        (PyObject *)&MagiDictType, dict_copy, NULL);
+    PyObject *new_copy_obj = magidict_instantiate(dict_copy);
     Py_DECREF(dict_copy);
-
-    if (new_copy == NULL)
+    if (new_copy_obj == NULL)
         return NULL;
+
+    MagiDictObject *new_copy = (MagiDictObject *)new_copy_obj;
 
     /* Preserve flags */
     new_copy->from_none = self->from_none;
@@ -1119,8 +1124,13 @@ static PyObject *magidict_pop(MagiDictObject *self, PyObject *args)
     {
         return NULL;
     }
+    PyObject *pop_name = PyUnicode_FromString("pop");
+    if (pop_name == NULL)
+        return NULL;
 
-    return PyDict_Type.tp_methods[0].ml_meth((PyObject *)self, args);
+    PyObject *result = PyObject_CallMethodObjArgs((PyObject *)self, pop_name, args, NULL);
+    Py_DECREF(pop_name);
+    return result;
 }
 
 /* popitem method */
@@ -1469,9 +1479,26 @@ static PyObject *magidict_reduce_ex(MagiDictObject *self,
     PyObject *state = magidict_getstate(self, NULL);
     if (state == NULL)
         return NULL;
+    /* Prefer package-level MagiDict constructor so pickles unpickle to same class */
+    PyObject *ctor = NULL;
+    PyObject *module = PyImport_ImportModule("magidict");
+    if (module != NULL)
+    {
+        ctor = PyObject_GetAttrString(module, "MagiDict");
+        Py_DECREF(module);
+    }
+    if (ctor == NULL)
+    {
+        /* fall back to C type */
+        PyErr_Clear();
+        ctor = (PyObject *)&MagiDictType;
+        Py_INCREF(ctor);
+    }
 
-    PyObject *result = PyTuple_Pack(5, (PyObject *)&MagiDictType, PyTuple_New(0),
-                                    state, Py_None, Py_None);
+    PyObject *empty_tuple = PyTuple_New(0);
+    PyObject *result = PyTuple_Pack(5, ctor, empty_tuple, state, Py_None, Py_None);
+    Py_DECREF(ctor);
+    Py_DECREF(empty_tuple);
 
     Py_DECREF(state);
     return result;
@@ -1993,15 +2020,38 @@ static PyObject *module_magi_loads(PyObject *self, PyObject *args,
         Py_DECREF(loads_func);
         return NULL;
     }
-
     PyObject *kwargs = PyDict_New();
-    PyDict_SetItemString(kwargs, "object_hook", (PyObject *)&MagiDictType);
+    if (kwargs == NULL)
+    {
+        Py_DECREF(loads_func);
+        Py_DECREF(json_str_obj);
+        return NULL;
+    }
 
-    PyObject *result =
-        PyObject_Call(loads_func, PyTuple_Pack(1, json_str_obj), kwargs);
+    /* Try to get package-level MagiDict */
+    PyObject *hook = NULL;
+    PyObject *pkg = PyImport_ImportModule("magidict");
+    if (pkg != NULL)
+    {
+        hook = PyObject_GetAttrString(pkg, "MagiDict");
+        Py_DECREF(pkg);
+    }
+    if (hook == NULL)
+    {
+        PyErr_Clear();
+        hook = (PyObject *)&MagiDictType;
+        Py_INCREF(hook);
+    }
 
-    Py_DECREF(loads_func);
+    PyDict_SetItemString(kwargs, "object_hook", hook);
+    Py_DECREF(hook);
+
+    PyObject *call_args = PyTuple_Pack(1, json_str_obj);
     Py_DECREF(json_str_obj);
+
+    PyObject *result = PyObject_Call(loads_func, call_args, kwargs);
+    Py_DECREF(loads_func);
+    Py_DECREF(call_args);
     Py_DECREF(kwargs);
 
     return result;
@@ -2030,11 +2080,33 @@ static PyObject *module_magi_load(PyObject *self, PyObject *args,
         return NULL;
 
     PyObject *kwargs = PyDict_New();
-    PyDict_SetItemString(kwargs, "object_hook", (PyObject *)&MagiDictType);
+    if (kwargs == NULL)
+    {
+        Py_DECREF(load_func);
+        return NULL;
+    }
 
-    PyObject *result = PyObject_Call(load_func, PyTuple_Pack(1, fp), kwargs);
+    PyObject *hook = NULL;
+    PyObject *pkg = PyImport_ImportModule("magidict");
+    if (pkg != NULL)
+    {
+        hook = PyObject_GetAttrString(pkg, "MagiDict");
+        Py_DECREF(pkg);
+    }
+    if (hook == NULL)
+    {
+        PyErr_Clear();
+        hook = (PyObject *)&MagiDictType;
+        Py_INCREF(hook);
+    }
 
+    PyDict_SetItemString(kwargs, "object_hook", hook);
+    Py_DECREF(hook);
+
+    PyObject *args_tuple = PyTuple_Pack(1, fp);
+    PyObject *result = PyObject_Call(load_func, args_tuple, kwargs);
     Py_DECREF(load_func);
+    Py_DECREF(args_tuple);
     Py_DECREF(kwargs);
 
     return result;
