@@ -55,25 +55,6 @@ jobs:
         run: |
           pytest tests/benchmark --benchmark-only --benchmark-save=main --benchmark-autosave -v || true
 
-      - name: Check for benchmark files
-        run: |
-          if [ -d ".benchmarks" ] && [ -n "$(find .benchmarks -type f)" ]; then
-            echo "BENCHMARKS_EXIST=true" >> $GITHUB_ENV
-            echo "Benchmark files found:"
-            find .benchmarks -type f
-          else
-            echo "BENCHMARKS_EXIST=false" >> $GITHUB_ENV
-            echo "No benchmark files found"
-          fi
-
-      - name: Verify files before upload
-        if: env.BENCHMARKS_EXIST == 'true'
-        run: |
-          echo "Working directory: $(pwd)"
-          echo "Listing .benchmarks:"
-          ls -laR .benchmarks/
-          echo "File count: $(find .benchmarks -type f | wc -l)"
-
       - name: Bundle benchmark results
         if: env.BENCHMARKS_EXIST == 'true'
         run: |
