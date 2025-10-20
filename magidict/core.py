@@ -44,7 +44,6 @@ class MagiDict(dict):
     def _hook(cls, item: Any) -> Any:
         """Recursively converts dictionaries in collections to MagiDicts."""
         if _has_c_hook:
-            # Use C extension for better performance
             return _c_fast_hook(item, cls)
         return cls._hook_with_memo(item, {})
 
@@ -54,7 +53,6 @@ class MagiDict(dict):
         Uses a memoization dict to handle circular references."""
 
         if _has_c_hook:
-            # Use C extension with provided memo for better performance
             return _c_fast_hook_with_memo(item, memo, cls)
 
         item_id = id(item)
