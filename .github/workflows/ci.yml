@@ -53,14 +53,25 @@ jobs:
       - name: Run benchmarks
         continue-on-error: true
         run: |
-          pytest tests/benchmark --benchmark-only --benchmark-save=main --benchmark-autosave || true
-          echo "Checking for benchmark results..."
+          echo "Running benchmarks..."
+          pytest tests/benchmark --benchmark-only --benchmark-save=main --benchmark-autosave -v || true
+
+      - name: Check benchmark results
+        run: |
+          echo "Checking for benchmark directory..."
           if [ -d ".benchmarks" ]; then
-            ls -la .benchmarks/
-            echo "BENCHMARKS_EXIST=true" >> $GITHUB_ENV
+            echo "Directory exists. Contents:"
+            ls -laR .benchmarks/
+            if [ -n "$(ls -A .benchmarks 2>/dev/null)" ]; then
+              echo "BENCHMARKS_EXIST=true" >> $GITHUB_ENV
+              echo "Files found in .benchmarks"
+            else
+              echo "BENCHMARKS_EXIST=false" >> $GITHUB_ENV
+              echo "Directory exists but is empty"
+            fi
           else
-            echo "No .benchmarks directory found"
             echo "BENCHMARKS_EXIST=false" >> $GITHUB_ENV
+            echo "No .benchmarks directory found"
           fi
 
       - name: Upload benchmark results
@@ -69,4 +80,3 @@ jobs:
         with:
           name: benchmark-results-py${{ matrix.python-version }}
           path: .benchmarks
-          if-no-files-found: warn
