@@ -224,8 +224,17 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
     if (PyTuple_Check(item))
     {
         Py_ssize_t size = PyTuple_Size(item);
-        PyObject *new_tuple = PyTuple_New(size);
-        if (new_tuple == NULL)
+        /* If tuple has _fields attribute (likely a namedtuple), reconstruct using its type */
+        int is_namedtuple = 0;
+        PyObject *fields = PyObject_GetAttrString(item, "_fields");
+        if (fields != NULL)
+        {
+            is_namedtuple = 1;
+            Py_DECREF(fields);
+        }
+
+        PyObject *temp_list = PyList_New(size);
+        if (temp_list == NULL)
         {
             Py_DECREF(item_id);
             return NULL;
@@ -237,15 +246,56 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
             PyObject *hooked = magidict_hook_with_memo(elem, memo);
             if (hooked == NULL)
             {
-                Py_DECREF(new_tuple);
+                Py_DECREF(temp_list);
                 Py_DECREF(item_id);
                 return NULL;
             }
-            PyTuple_SetItem(new_tuple, i, hooked);
+            PyList_SetItem(temp_list, i, hooked); /* steals ref to hooked */
         }
 
+        PyObject *result_tuple = NULL;
+        if (is_namedtuple)
+        {
+            /* Build args tuple for constructor */
+            PyObject *args = PyList_AsTuple(temp_list);
+            if (args == NULL)
+            {
+                Py_DECREF(temp_list);
+                Py_DECREF(item_id);
+                return NULL;
+            }
+            PyObject *typeobj = (PyObject *)PyObject_Type(item);
+            if (typeobj == NULL)
+            {
+                Py_DECREF(args);
+                Py_DECREF(temp_list);
+                Py_DECREF(item_id);
+                return NULL;
+            }
+            result_tuple = PyObject_CallObject(typeobj, args);
+            Py_DECREF(typeobj);
+            Py_DECREF(args);
+            if (result_tuple == NULL)
+            {
+                Py_DECREF(temp_list);
+                Py_DECREF(item_id);
+                return NULL;
+            }
+        }
+        else
+        {
+            result_tuple = PyList_AsTuple(temp_list);
+            if (result_tuple == NULL)
+            {
+                Py_DECREF(temp_list);
+                Py_DECREF(item_id);
+                return NULL;
+            }
+        }
+
+        Py_DECREF(temp_list);
         Py_DECREF(item_id);
-        return new_tuple;
+        return result_tuple;
     }
 
     /* Return item as-is for other types */
@@ -1120,17 +1170,49 @@ static PyObject *magidict_fromkeys(PyTypeObject *type, PyObject *args)
 /* pop method */
 static PyObject *magidict_pop(MagiDictObject *self, PyObject *args)
 {
+    /* Implement pop directly to avoid recursively calling the bound method
+       which would otherwise call magidict_pop again. Supports pop(key[, default]). */
     if (magidict_raise_if_protected(self) < 0)
     {
         return NULL;
     }
-    PyObject *pop_name = PyUnicode_FromString("pop");
-    if (pop_name == NULL)
-        return NULL;
 
-    PyObject *result = PyObject_CallMethodObjArgs((PyObject *)self, pop_name, args, NULL);
-    Py_DECREF(pop_name);
-    return result;
+    Py_ssize_t nargs = PyTuple_Size(args);
+    if (nargs < 1 || nargs > 2)
+    {
+        PyErr_SetString(PyExc_TypeError, "pop expected 1 or 2 arguments");
+        return NULL;
+    }
+
+    PyObject *key = PyTuple_GetItem(args, 0); /* borrowed */
+    PyObject *default_value = NULL;
+    int has_default = 0;
+    if (nargs == 2)
+    {
+        default_value = PyTuple_GetItem(args, 1); /* borrowed */
+        has_default = 1;
+    }
+
+    PyObject *value = PyDict_GetItem((PyObject *)self, key);
+    if (value != NULL)
+    {
+        Py_INCREF(value);
+        if (PyDict_DelItem((PyObject *)self, key) < 0)
+        {
+            Py_DECREF(value);
+            return NULL;
+        }
+        return value;
+    }
+
+    if (has_default)
+    {
+        Py_INCREF(default_value);
+        return default_value;
+    }
+
+    PyErr_SetObject(PyExc_KeyError, key);
+    return NULL;
 }
 
 /* popitem method */
