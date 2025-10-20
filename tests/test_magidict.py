@@ -6411,6 +6411,51 @@ class TestStrictGet(TestCase):
         self.assertIsInstance(result, MagiDict)
         self.assertEqual(result["key"], "value")
 
+    def test_hook_with_memo_handles_lists_inplace_and_memo(self):
+        """Ensure _hook_with_memo handles lists by mutating them in-place and
+        uses the memoization to avoid re-wrapping already seen objects.
+        This targets the branch that sets memo[item_id] = item for lists.
+        """
+        # Construct a list that contains a dict that should be converted
+        lst = [{"a": 1}, {"b": 2}]
+
+        # Create a fresh memo and call the internal hook
+        memo = {}
+        # Use the public-facing class to reach the private method
+        from magidict import MagiDict as MD
+
+        res = MD._hook_with_memo(lst, memo)
+
+        # The returned object should be the same list (in-place mutation)
+        self.assertIs(res, lst)
+        # Elements should have been converted to MagiDict
+        self.assertIsInstance(lst[0], MD)
+        self.assertEqual(lst[0].a, 1)
+
+        # Re-run hooking on the same list with the same memo to ensure memo is used
+        res2 = MD._hook_with_memo(lst, memo)
+        self.assertIs(res2, lst)
+
+    def test_strict_get_and_shorthands_on_protected_magidict(self):
+        """Ensure strict_get/sget/sg behave like dict access even when the
+        MagiDict is a protected one (from None or missing), and that they
+        raise KeyError for missing keys like normal dict access.
+        This targets the strict_get and its shorthands.
+        """
+        MD = MagiDict
+        md = MD({"data": None})
+        protected = md.data  # should be a protected MagiDict (from None)
+
+        # strict_get should raise KeyError when asking for a missing key
+        with self.assertRaises(KeyError):
+            protected.strict_get("missing_key")
+
+        with self.assertRaises(KeyError):
+            protected.sget("missing_key")
+
+        with self.assertRaises(KeyError):
+            protected.sg("missing_key")
+
 
 class TestMagiDictSearchKey(TestCase):
     """Tests for the search_key() method of MagiDict."""
@@ -6864,6 +6909,128 @@ class TestFilterEdgeCases(TestCase):
 
         self.assertEqual(result, expected)
         self.assertEqual(result_drop_empty, expected_drop_empty)
+
+
+class TestCoreMissingCoverage(TestCase):
+    def test_getitem_with_list_and_tuple_keys_and_dot_string(self):
+        md = MagiDict({"a": {"b": {"c": 1}}, "lst": [10, {"x": 5}]})
+        # forgiving nested access with list
+        self.assertEqual(md[["a", "b", "c"]], 1)
+        # forgiving nested access with tuple
+        self.assertEqual(md[("a", "b", "c")], 1)
+        # non-existing path returns empty MagiDict marked _from_missing
+        res = md[["a", "b", "nope"]]
+        self.assertIsInstance(res, MagiDict)
+        self.assertTrue(getattr(res, "_from_missing", False))
+        # dotted string unforgiving access
+        self.assertEqual(md["a.b.c"], 1)
+        # dotted string indexing into list
+        md2 = MagiDict({"arr": ["zero", {"k": "v"}]})
+        self.assertEqual(md2["arr.1.k"], "v")
+
+    def test_getattr_flags_and_protection(self):
+        md = MagiDict({"maybe": None})
+        # attribute access for None returns MagiDict with _from_none
+        m = md.maybe
+        self.assertIsInstance(m, MagiDict)
+        self.assertTrue(getattr(m, "_from_none", False))
+        # cannot set item on protected MagiDict
+        with self.assertRaises(TypeError):
+            m["x"] = 1
+        # _from_missing via getattr
+        mm = md.no_such_key
+        self.assertIsInstance(mm, MagiDict)
+        self.assertTrue(getattr(mm, "_from_missing", False))
+
+    def test_deepcopy_and_getstate_setstate_roundtrip(self):
+        md = MagiDict({"a": 1})
+        # mark as from_missing and ensure deepcopy preserves flag
+        mm = md.nope
+        self.assertTrue(getattr(mm, "_from_missing", False))
+        cp = pickle.loads(pickle.dumps(mm))
+        self.assertTrue(getattr(cp, "_from_missing", False))
+
+    def test_disenchant_circular_and_collections(self):
+        a = MagiDict({"name": "root"})
+        b = MagiDict({"child": a})
+        a["parent"] = b  # circular reference
+        a["numbers"] = (1, 2, 3)
+        a["seq"] = [a, b]
+        a["sset"] = {1, 2}
+        res = a.disenchant()
+        # Should be plain dicts/collections and preserve nesting without MagiDict types
+        self.assertIsInstance(res, dict)
+        self.assertEqual(res["name"], "root")
+        self.assertIsInstance(res["numbers"], tuple)
+        self.assertIsInstance(res["seq"], list)
+        self.assertIsInstance(res["sset"], set)
+        # circular structure should not blow up and should reuse objects where appropriate
+        self.assertIs(res["parent"]["child"], res)
+
+    def test_search_key_and_search_keys(self):
+        data = {
+            "a": {"x": 1},
+            "b": [{"x": 2}, {"y": 3}],
+            "x": 0,
+        }
+        md = MagiDict(data)
+        # first match is the first occurrence found during traversal (nested under 'a')
+        self.assertEqual(md.search_key("x"), 1)
+        # specifying default when not found
+        self.assertEqual(md.search_key("nope", default="d"), "d")
+        # search_keys should return all occurrences
+        all_x = md.search_keys("x")
+        self.assertCountEqual(all_x, [0, 1, 2])
+
+    def test_filter_various_signatures_and_drop_empty(self):
+        md = MagiDict({
+            "a": 1,
+            "b": None,
+            "c": [1, None, 2, {"n": None}],
+            "d": {"keep": 5, "drop": None},
+        })
+
+        # default filter removes None
+        f = md.filter()
+        self.assertIn("a", f)
+        self.assertNotIn("b", f)
+        # predicate with two args (index, value) for sequences
+        def seq_pred(_, v):
+            return v is not None
+
+        f2 = md.filter(seq_pred, drop_empty=True)
+        self.assertIn("c", f2)
+        # nested dict drops empty entries
+        self.assertIn("keep", f2.d)
+        self.assertNotIn("drop", f2.d)
+
+    def test_json_loads_and_load_and_enchant_none(self):
+        s = '{"a": 1, "b": {"c": null}}'
+        md = magi_loads(s)
+        self.assertIsInstance(md, MagiDict)
+        buf = io.StringIO(s)
+        md2 = magi_load(buf)
+        self.assertIsInstance(md2, MagiDict)
+        # enchant with wrong type
+        with self.assertRaises(TypeError):
+            enchant(123)
+        # none() converts empty protected MagiDict to None
+        m = MagiDict()
+        object.__setattr__(m, "_from_missing", True)
+        self.assertIsNone(none(m))
+        # normal MagiDict is returned as-is
+        md_obj = MagiDict({"x": 1})
+        self.assertIs(none(md_obj), md_obj)
+
+    def test_magi_loads_handles_object_hook(self):
+        # ensure magi_loads uses MagiDict as object hook
+        s = json.dumps({"k": {"inner": 2}})
+        md = magi_loads(s)
+        self.assertIsInstance(md, MagiDict)
+        self.assertIsInstance(md.k, MagiDict)
+
+
+
 
 
 if __name__ == "__main__":
