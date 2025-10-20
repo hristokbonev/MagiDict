@@ -226,11 +226,10 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
         Py_ssize_t size = PyTuple_Size(item);
         /* If tuple has _fields attribute (likely a namedtuple), reconstruct using its type */
         int is_namedtuple = 0;
-        PyObject *fields = PyObject_GetAttrString(item, "_fields");
-        if (fields != NULL)
+        /* Use HasAttr to avoid setting an exception if attribute doesn't exist */
+        if (PyObject_HasAttrString(item, "_fields") == 1)
         {
             is_namedtuple = 1;
-            Py_DECREF(fields);
         }
 
         PyObject *temp_list = PyList_New(size);
