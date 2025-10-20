@@ -51,8 +51,36 @@ static int magidict_raise_if_protected(MagiDictObject *self)
 /* Helper: Create an empty protected MagiDict */
 static PyObject *magidict_create_protected(int from_none, int from_missing)
 {
-    MagiDictObject *md =
-        (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+    /* Prefer to construct the package-level MagiDict (may be a Python wrapper
+       subclass) so callers using isinstance(MagiDict) succeed. If the package
+       class isn't available, fall back to constructing the C type directly. */
+    PyObject *module = PyImport_ImportModule("magidict");
+    if (module != NULL)
+    {
+        PyObject *cls = PyObject_GetAttrString(module, "MagiDict");
+        Py_DECREF(module);
+        if (cls != NULL && PyCallable_Check(cls))
+        {
+            PyObject *inst = PyObject_CallFunctionObjArgs(cls, NULL);
+            Py_DECREF(cls);
+            if (inst != NULL)
+            {
+                /* Set flags if the instance exposes the fields directly */
+                if (PyObject_TypeCheck(inst, &MagiDictType))
+                {
+                    MagiDictObject *md = (MagiDictObject *)inst;
+                    md->from_none = from_none;
+                    md->from_missing = from_missing;
+                }
+                return inst;
+            }
+            return NULL;
+        }
+        Py_XDECREF(cls);
+    }
+
+    /* Fallback: directly instantiate the C type */
+    MagiDictObject *md = (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
     if (md == NULL)
         return NULL;
 
@@ -93,7 +121,7 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
     if (PyDict_Check(item))
     {
         MagiDictObject *new_dict =
-            (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+            (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
         if (new_dict == NULL)
         {
             Py_DECREF(item_id);
@@ -1256,7 +1284,7 @@ static PyObject *magidict_deepcopy_recursive(PyObject *item, PyObject *memo)
     {
         MagiDictObject *src = (MagiDictObject *)item;
         MagiDictObject *copied =
-            (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+            (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
         if (copied == NULL)
         {
             Py_DECREF(item_id);
@@ -1451,7 +1479,7 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
     }
 
     MagiDictObject *filtered =
-        (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+        (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
     if (filtered == NULL)
     {
         Py_DECREF(function);
@@ -1730,7 +1758,11 @@ static PyMethodDef module_methods[] = {
 /* Module definition */
 static PyModuleDef magidictmodule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "magidict",
+    /* This C extension is built as the submodule "magidict._magidict".
+       Ensure the module name reflects that so importing "magidict" will
+       resolve to the package's __init__ module and not the C extension.
+    */
+    .m_name = "magidict._magidict",
     .m_doc = PyDoc_STR(
         "MagiDict - A recursive dictionary with safe attribute access"),
     .m_size = -1,
