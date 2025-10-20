@@ -79,5 +79,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-py${{ matrix.python-version }}
-          path: .benchmarks/**/* # Try with explicit glob pattern
+          path: .benchmarks/ # Just the directory, no glob
           if-no-files-found: warn
