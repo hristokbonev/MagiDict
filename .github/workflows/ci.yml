@@ -74,10 +74,15 @@ jobs:
           ls -laR .benchmarks/
           echo "File count: $(find .benchmarks -type f | wc -l)"
 
+      - name: Bundle benchmark results
+        if: env.BENCHMARKS_EXIST == 'true'
+        run: |
+          tar -czf benchmark-results-py${{ matrix.python-version }}.tar.gz .benchmarks/
+
       - name: Upload benchmark results
         if: env.BENCHMARKS_EXIST == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-py${{ matrix.python-version }}
-          path: .benchmarks/ # Just the directory, no glob
+          path: benchmark-results-py${{ matrix.python-version }}.tar.gz
           if-no-files-found: warn
