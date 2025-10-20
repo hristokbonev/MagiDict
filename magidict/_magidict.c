@@ -1,6 +1,8 @@
+/* Minimal C extension - only implement the recursive hook function */
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+/* Forward declaration */
 static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *magidict_class);
 
 static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *magidict_class)
@@ -8,6 +10,7 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
     if (item == NULL)
         return NULL;
 
+    /* Check memo for circular references */
     PyObject *item_id = PyLong_FromVoidPtr(item);
     if (item_id == NULL)
         return NULL;
@@ -20,6 +23,7 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
         return cached;
     }
 
+    /* Check if already a MagiDict instance */
     int is_magidict = PyObject_IsInstance(item, magidict_class);
     if (is_magidict < 0)
     {
@@ -34,6 +38,7 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
         return item;
     }
 
+    /* Convert dict to MagiDict */
     if (PyDict_Check(item))
     {
         PyObject *new_dict = PyObject_CallFunctionObjArgs(magidict_class, NULL);
@@ -72,6 +77,7 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
         return new_dict;
     }
 
+    /* Handle lists - mutate in place */
     if (PyList_Check(item))
     {
         PyDict_SetItem(memo, item_id, item);
@@ -94,71 +100,73 @@ static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *m
         return item;
     }
 
+    /* Handle tuples */
     if (PyTuple_Check(item))
     {
-        PyObject *fields = PyObject_GetAttrString(item, "_fields");
-        if (fields != NULL)
-        {
-            Py_DECREF(fields);
-            Py_ssize_t size = PyTuple_Size(item);
-            PyObject *hooked_values = PyTuple_New(size);
-            if (hooked_values == NULL)
-            {
-                Py_DECREF(item_id);
-                return NULL;
-            }
-
-            for (Py_ssize_t i = 0; i < size; i++)
-            {
-                PyObject *elem = PyTuple_GetItem(item, i);
-                PyObject *hooked = fast_hook_with_memo(elem, memo, magidict_class);
-                if (hooked == NULL)
-                {
-                    Py_DECREF(hooked_values);
-                    Py_DECREF(item_id);
-                    return NULL;
-                }
-                PyTuple_SetItem(hooked_values, i, hooked);
-            }
-
-            PyObject *result = PyObject_CallObject((PyObject *)Py_TYPE(item), hooked_values);
-            Py_DECREF(hooked_values);
-            Py_DECREF(item_id);
-            return result;
-        }
-
-        PyErr_Clear();
-
         Py_ssize_t size = PyTuple_Size(item);
-        PyObject *new_tuple = PyTuple_New(size);
-        if (new_tuple == NULL)
+        PyObject *hooked_values = PyTuple_New(size);
+        if (hooked_values == NULL)
         {
             Py_DECREF(item_id);
             return NULL;
         }
 
+        /* Hook all elements first */
         for (Py_ssize_t i = 0; i < size; i++)
         {
             PyObject *elem = PyTuple_GetItem(item, i);
             PyObject *hooked = fast_hook_with_memo(elem, memo, magidict_class);
             if (hooked == NULL)
             {
-                Py_DECREF(new_tuple);
+                Py_DECREF(hooked_values);
                 Py_DECREF(item_id);
                 return NULL;
             }
-            PyTuple_SetItem(new_tuple, i, hooked);
+            PyTuple_SetItem(hooked_values, i, hooked);
+        }
+
+        /* Check if it's a plain tuple or a subclass */
+        PyTypeObject *item_type = Py_TYPE(item);
+        PyTypeObject *tuple_type = &PyTuple_Type;
+
+        PyObject *result;
+        if (item_type == tuple_type)
+        {
+            /* Plain tuple - just return the hooked values */
+            result = hooked_values;
+        }
+        else
+        {
+            /* Subclass (including named tuples) - preserve type */
+            /* Check if named tuple */
+            PyObject *fields = PyObject_GetAttrString(item, "_fields");
+            if (fields != NULL)
+            {
+                /* Named tuple - call type constructor with hooked values */
+                Py_DECREF(fields);
+                result = PyObject_CallObject((PyObject *)item_type, hooked_values);
+                Py_DECREF(hooked_values);
+            }
+            else
+            {
+                /* Regular tuple subclass - call type constructor with hooked values */
+                PyErr_Clear();
+                result = PyObject_CallObject((PyObject *)item_type, hooked_values);
+                Py_DECREF(hooked_values);
+            }
         }
 
         Py_DECREF(item_id);
-        return new_tuple;
+        return result;
     }
 
+    /* Return item as-is for other types */
     Py_DECREF(item_id);
     Py_INCREF(item);
     return item;
 }
 
+/* Python-callable wrapper for fast_hook - creates its own memo */
 static PyObject *fast_hook(PyObject *self, PyObject *args)
 {
     PyObject *item;
@@ -179,6 +187,7 @@ static PyObject *fast_hook(PyObject *self, PyObject *args)
     return result;
 }
 
+/* Python-callable wrapper for fast_hook_with_memo - accepts external memo */
 static PyObject *py_fast_hook_with_memo(PyObject *self, PyObject *args)
 {
     PyObject *item;
@@ -199,6 +208,7 @@ static PyObject *py_fast_hook_with_memo(PyObject *self, PyObject *args)
     return fast_hook_with_memo(item, memo, magidict_class);
 }
 
+/* Module method definitions */
 static PyMethodDef module_methods[] = {
     {"fast_hook", fast_hook, METH_VARARGS,
      "Fast recursive conversion of dicts to MagiDicts (creates own memo)"},
@@ -206,6 +216,7 @@ static PyMethodDef module_methods[] = {
      "Fast recursive conversion of dicts to MagiDicts (uses provided memo)"},
     {NULL, NULL, 0, NULL}};
 
+/* Module definition */
 static PyModuleDef magidictmodule = {
     PyModuleDef_HEAD_INIT,
     .m_name = "magidict._magidict",
@@ -214,6 +225,7 @@ static PyModuleDef magidictmodule = {
     .m_methods = module_methods,
 };
 
+/* Module initialization */
 PyMODINIT_FUNC PyInit__magidict(void)
 {
     return PyModule_Create(&magidictmodule);
