@@ -70,11 +70,3 @@ jobs:
           name: benchmark-results-py${{ matrix.python-version }}
           path: .benchmarks
           if-no-files-found: warn
-
-      - name: Upload benchmark results
-        if: hashFiles('.benchmarks/**') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results-py${{ matrix.python-version }}
-          path: .benchmarks
-          if-no-files-found: warn
