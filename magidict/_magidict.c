@@ -18,6 +18,7 @@ static PyObject *_MISSING = NULL;
 
 /* Forward declarations */
 static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo);
+static PyObject *magidict_instantiate(PyObject *arg);
 static PyObject *magidict_new(PyTypeObject *type, PyObject *args,
                               PyObject *kwds);
 static int magidict_init(MagiDictObject *self, PyObject *args, PyObject *kwds);
@@ -121,9 +122,9 @@ static PyObject *magidict_instantiate(PyObject *arg)
 
     if (arg != NULL)
     {
-        return magidict_instantiate(arg);
+        return PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, arg, NULL);
     }
-    return magidict_instantiate(NULL);
+    return PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
 }
 
 /* Hook implementation - recursively convert dicts to MagiDicts */
