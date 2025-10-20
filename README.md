@@ -715,6 +715,12 @@ md[('tuple', 'missing')]  # MagiDict({}) - does not raise KeyError
 md.sg(('tuple', 'missing'))  # KeyError - raises KeyError
 ```
 
+---
+
+## Contributing
+
+Contributions are welcome and appreciated! Please see the [CONTRIBUTING.md](contributing.md) for more information.
+
 ## License
 
 MagiDict is licensed under the [MIT License](https://github.com/hristokbonev/MagiDict/blob/main/LICENSE).
