@@ -611,6 +611,8 @@ regular = md.disenchant()
 
 ### Performance
 
+Magidict's initialization and recursive conversion is very fast due to the core hooks being implemented in C.
+
 [Benchmarks](https://hristokbonev.github.io/magidict/)
 
 ### Best Practices
