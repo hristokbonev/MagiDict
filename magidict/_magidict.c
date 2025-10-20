@@ -68,10 +68,17 @@ static PyObject *magidict_create_protected(int from_none, int from_missing)
             {
                 /* Set flags if the instance exposes the fields directly */
                 if (PyObject_TypeCheck(inst, &MagiDictType))
-                {
-                    MagiDictObject *md = (MagiDictObject *)inst;
-                    md->from_none = from_none;
-                    md->from_missing = from_missing;
+                    /* If attribute lookup failed, clear the exception so callers that
+                       fall back to constructing the C type don't return while an
+                       exception is still set. */
+                    if (cls == NULL)
+                    {
+                        PyErr_Clear();
+                    }
+                Py_XDECREF(cls);
+                MagiDictObject *md = (MagiDictObject *)inst;
+                md->from_none = from_none;
+                md->from_missing = from_missing;
                 }
                 return inst;
             }
@@ -116,6 +123,10 @@ static PyObject *magidict_instantiate(PyObject *arg)
             if (inst != NULL)
                 return inst;
             return NULL;
+        }
+        if (cls == NULL)
+        {
+            PyErr_Clear();
         }
         Py_XDECREF(cls);
     }
