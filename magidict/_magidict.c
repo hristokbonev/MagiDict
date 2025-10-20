@@ -80,13 +80,50 @@ static PyObject *magidict_create_protected(int from_none, int from_missing)
     }
 
     /* Fallback: directly instantiate the C type */
-    MagiDictObject *md = (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
+    PyObject *md_obj = magidict_instantiate(NULL);
+    MagiDictObject *md = (MagiDictObject *)md_obj;
     if (md == NULL)
         return NULL;
 
     md->from_none = from_none;
     md->from_missing = from_missing;
     return (PyObject *)md;
+}
+
+/* Helper to instantiate the package-level MagiDict when possible.
+   Falls back to constructing the raw C MagiDictType if the package
+   class isn't available. Accepts NULL for no-arg construction. */
+static PyObject *magidict_instantiate(PyObject *arg)
+{
+    PyObject *module = PyImport_ImportModule("magidict");
+    if (module != NULL)
+    {
+        PyObject *cls = PyObject_GetAttrString(module, "MagiDict");
+        Py_DECREF(module);
+        if (cls != NULL && PyCallable_Check(cls))
+        {
+            PyObject *inst = NULL;
+            if (arg != NULL)
+            {
+                inst = PyObject_CallFunctionObjArgs(cls, arg, NULL);
+            }
+            else
+            {
+                inst = PyObject_CallFunctionObjArgs(cls, NULL);
+            }
+            Py_DECREF(cls);
+            if (inst != NULL)
+                return inst;
+            return NULL;
+        }
+        Py_XDECREF(cls);
+    }
+
+    if (arg != NULL)
+    {
+        return magidict_instantiate(arg);
+    }
+    return magidict_instantiate(NULL);
 }
 
 /* Hook implementation - recursively convert dicts to MagiDicts */
@@ -120,8 +157,8 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
     /* Convert dict to MagiDict */
     if (PyDict_Check(item))
     {
-        MagiDictObject *new_dict =
-            (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
+        PyObject *new_obj = magidict_instantiate(NULL);
+        MagiDictObject *new_dict = (MagiDictObject *)new_obj;
         if (new_dict == NULL)
         {
             Py_DECREF(item_id);
@@ -1283,8 +1320,8 @@ static PyObject *magidict_deepcopy_recursive(PyObject *item, PyObject *memo)
     if (PyObject_TypeCheck(item, &MagiDictType))
     {
         MagiDictObject *src = (MagiDictObject *)item;
-        MagiDictObject *copied =
-            (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
+        PyObject *copied_obj = magidict_instantiate(NULL);
+        MagiDictObject *copied = (MagiDictObject *)copied_obj;
         if (copied == NULL)
         {
             Py_DECREF(item_id);
@@ -1494,7 +1531,7 @@ static PyObject *magidict_filter_nested_seq(PyObject *seq, PyObject *function,
         else if (PyDict_Check(item))
         {
             /* Convert to MagiDict and filter */
-            PyObject *magidict_item = PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, item, NULL);
+            PyObject *magidict_item = magidict_instantiate(item);
             Py_DECREF(item);
             if (magidict_item == NULL)
             {
@@ -1649,7 +1686,7 @@ static PyObject *magidict_filter_recursive(PyObject *obj, PyObject *function,
         /* Handle regular dict values */
         else if (PyDict_Check(value))
         {
-            PyObject *magidict_value = PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, value, NULL);
+            PyObject *magidict_value = magidict_instantiate(value);
             if (magidict_value == NULL)
             {
                 Py_DECREF(filtered);
@@ -1907,7 +1944,7 @@ static PyObject *module_enchant(PyObject *self, PyObject *d)
         return NULL;
     }
 
-    return PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, d, NULL);
+    return magidict_instantiate(d);
 }
 
 /* none function */
