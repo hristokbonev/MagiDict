@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+
 #include "structmember.h"
 
 /* MagiDict type object */
@@ -17,15 +18,18 @@ static PyObject *_MISSING = NULL;
 
 /* Forward declarations */
 static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo);
-static PyObject *magidict_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static PyObject *magidict_new(PyTypeObject *type, PyObject *args,
+                              PyObject *kwds);
 static int magidict_init(MagiDictObject *self, PyObject *args, PyObject *kwds);
 static void magidict_dealloc(MagiDictObject *self);
 static PyObject *magidict_getitem(MagiDictObject *self, PyObject *key);
-static int magidict_setitem(MagiDictObject *self, PyObject *key, PyObject *value);
+static int magidict_setitem(MagiDictObject *self, PyObject *key,
+                            PyObject *value);
 static int magidict_delitem(MagiDictObject *self, PyObject *key);
 static PyObject *magidict_getattro(MagiDictObject *self, PyObject *name);
 static PyObject *magidict_repr(MagiDictObject *self);
-static PyObject *magidict_richcompare(MagiDictObject *self, PyObject *other, int op);
+static PyObject *magidict_richcompare(MagiDictObject *self, PyObject *other,
+                                      int op);
 
 /* Helper: Check if this is a protected MagiDict */
 static int magidict_is_protected(MagiDictObject *self)
@@ -47,7 +51,8 @@ static int magidict_raise_if_protected(MagiDictObject *self)
 /* Helper: Create an empty protected MagiDict */
 static PyObject *magidict_create_protected(int from_none, int from_missing)
 {
-    MagiDictObject *md = (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+    MagiDictObject *md =
+        (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
     if (md == NULL)
         return NULL;
 
@@ -87,7 +92,8 @@ static PyObject *magidict_hook_with_memo(PyObject *item, PyObject *memo)
     /* Convert dict to MagiDict */
     if (PyDict_Check(item))
     {
-        MagiDictObject *new_dict = (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+        MagiDictObject *new_dict =
+            (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
         if (new_dict == NULL)
         {
             Py_DECREF(item_id);
@@ -277,7 +283,8 @@ static int magidict_init(MagiDictObject *self, PyObject *args, PyObject *kwds)
 }
 
 /* __new__ method */
-static PyObject *magidict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject *magidict_new(PyTypeObject *type, PyObject *args,
+                              PyObject *kwds)
 {
     MagiDictObject *self;
     self = (MagiDictObject *)PyDict_Type.tp_new(type, args, kwds);
@@ -340,7 +347,8 @@ static PyObject *magidict_getitem(MagiDictObject *self, PyObject *key)
                 obj = next;
             }
             /* Handle Sequence (list-like) access */
-            else if (PySequence_Check(obj) && !PyUnicode_Check(obj) && !PyBytes_Check(obj))
+            else if (PySequence_Check(obj) && !PyUnicode_Check(obj) &&
+                     !PyBytes_Check(obj))
             {
                 PyObject *index = PyNumber_Long(k);
                 if (index == NULL)
@@ -434,7 +442,8 @@ static PyObject *magidict_getitem(MagiDictObject *self, PyObject *key)
                     Py_DECREF(obj);
                     obj = next;
                 }
-                else if (PySequence_Check(obj) && !PyUnicode_Check(obj) && !PyBytes_Check(obj))
+                else if (PySequence_Check(obj) && !PyUnicode_Check(obj) &&
+                         !PyBytes_Check(obj))
                 {
                     PyObject *index = PyNumber_Long(k);
                     if (index == NULL)
@@ -478,7 +487,8 @@ static PyObject *magidict_getitem(MagiDictObject *self, PyObject *key)
 }
 
 /* __setitem__ implementation */
-static int magidict_setitem(MagiDictObject *self, PyObject *key, PyObject *value)
+static int magidict_setitem(MagiDictObject *self, PyObject *key,
+                            PyObject *value)
 {
     if (magidict_raise_if_protected(self) < 0)
     {
@@ -584,7 +594,8 @@ static PyObject *magidict_repr(MagiDictObject *self)
 }
 
 /* __dir__ implementation for autocomplete */
-static PyObject *magidict_dir(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_dir(MagiDictObject *self,
+                              PyObject *Py_UNUSED(ignored))
 {
     PyObject *result = PyList_New(0);
     if (result == NULL)
@@ -637,19 +648,22 @@ static PyObject *magidict_dir(MagiDictObject *self, PyObject *Py_UNUSED(ignored)
 }
 
 /* __richcompare__ implementation */
-static PyObject *magidict_richcompare(MagiDictObject *self, PyObject *other, int op)
+static PyObject *magidict_richcompare(MagiDictObject *self, PyObject *other,
+                                      int op)
 {
     return PyDict_Type.tp_richcompare((PyObject *)self, other, op);
 }
 
 /* mget method */
-static PyObject *magidict_mget(MagiDictObject *self, PyObject *args, PyObject *kwds)
+static PyObject *magidict_mget(MagiDictObject *self, PyObject *args,
+                               PyObject *kwds)
 {
     PyObject *key;
     PyObject *default_value = _MISSING;
 
     static char *kwlist[] = {"key", "default", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &key, &default_value))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &key,
+                                     &default_value))
     {
         return NULL;
     }
@@ -859,7 +873,8 @@ static PyObject *magidict_disenchant_recursive(PyObject *item, PyObject *memo)
 }
 
 /* disenchant method */
-static PyObject *magidict_disenchant(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_disenchant(MagiDictObject *self,
+                                     PyObject *Py_UNUSED(ignored))
 {
     PyObject *memo = PyDict_New();
     if (memo == NULL)
@@ -872,7 +887,8 @@ static PyObject *magidict_disenchant(MagiDictObject *self, PyObject *Py_UNUSED(i
 }
 
 /* update method */
-static PyObject *magidict_update(MagiDictObject *self, PyObject *args, PyObject *kwds)
+static PyObject *magidict_update(MagiDictObject *self, PyObject *args,
+                                 PyObject *kwds)
 {
     if (magidict_raise_if_protected(self) < 0)
     {
@@ -917,7 +933,8 @@ static PyObject *magidict_update(MagiDictObject *self, PyObject *args, PyObject 
 }
 
 /* copy method */
-static PyObject *magidict_copy(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_copy(MagiDictObject *self,
+                               PyObject *Py_UNUSED(ignored))
 {
     PyObject *dict_copy = PyDict_Copy((PyObject *)self);
     if (dict_copy == NULL)
@@ -1041,7 +1058,8 @@ static PyObject *magidict_pop(MagiDictObject *self, PyObject *args)
 }
 
 /* popitem method */
-static PyObject *magidict_popitem(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_popitem(MagiDictObject *self,
+                                  PyObject *Py_UNUSED(ignored))
 {
     if (magidict_raise_if_protected(self) < 0)
     {
@@ -1071,7 +1089,8 @@ static PyObject *magidict_popitem(MagiDictObject *self, PyObject *Py_UNUSED(igno
 }
 
 /* clear method */
-static PyObject *magidict_clear(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_clear(MagiDictObject *self,
+                                PyObject *Py_UNUSED(ignored))
 {
     if (magidict_raise_if_protected(self) < 0)
     {
@@ -1083,9 +1102,11 @@ static PyObject *magidict_clear(MagiDictObject *self, PyObject *Py_UNUSED(ignore
 }
 
 /* search_key method */
-static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key, PyObject *default_val);
+static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key,
+                                               PyObject *default_val);
 
-static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key, PyObject *default_val)
+static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key,
+                                               PyObject *default_val)
 {
     if (PyObject_TypeCheck(obj, &MagiDictType) || PyDict_Check(obj))
     {
@@ -1105,14 +1126,16 @@ static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key, PyO
 
             if (PyDict_Check(value) || PyObject_TypeCheck(value, &MagiDictType))
             {
-                PyObject *result = magidict_search_key_recursive(value, key, default_val);
+                PyObject *result =
+                    magidict_search_key_recursive(value, key, default_val);
                 if (result != default_val)
                 {
                     return result;
                 }
                 Py_DECREF(result);
             }
-            else if (PySequence_Check(value) && !PyUnicode_Check(value) && !PyBytes_Check(value))
+            else if (PySequence_Check(value) && !PyUnicode_Check(value) &&
+                     !PyBytes_Check(value))
             {
                 Py_ssize_t size = PySequence_Size(value);
                 for (Py_ssize_t i = 0; i < size; i++)
@@ -1123,7 +1146,8 @@ static PyObject *magidict_search_key_recursive(PyObject *obj, PyObject *key, PyO
 
                     if (PyDict_Check(item) || PyObject_TypeCheck(item, &MagiDictType))
                     {
-                        PyObject *result = magidict_search_key_recursive(item, key, default_val);
+                        PyObject *result =
+                            magidict_search_key_recursive(item, key, default_val);
                         Py_DECREF(item);
                         if (result != default_val)
                         {
@@ -1156,9 +1180,11 @@ static PyObject *magidict_search_key(MagiDictObject *self, PyObject *args)
 }
 
 /* search_keys method */
-static void magidict_search_keys_recursive(PyObject *obj, PyObject *key, PyObject *results);
+static void magidict_search_keys_recursive(PyObject *obj, PyObject *key,
+                                           PyObject *results);
 
-static void magidict_search_keys_recursive(PyObject *obj, PyObject *key, PyObject *results)
+static void magidict_search_keys_recursive(PyObject *obj, PyObject *key,
+                                           PyObject *results)
 {
     if (PyObject_TypeCheck(obj, &MagiDictType) || PyDict_Check(obj))
     {
@@ -1177,7 +1203,8 @@ static void magidict_search_keys_recursive(PyObject *obj, PyObject *key, PyObjec
             {
                 magidict_search_keys_recursive(value, key, results);
             }
-            else if (PySequence_Check(value) && !PyUnicode_Check(value) && !PyBytes_Check(value))
+            else if (PySequence_Check(value) && !PyUnicode_Check(value) &&
+                     !PyBytes_Check(value))
             {
                 Py_ssize_t size = PySequence_Size(value);
                 for (Py_ssize_t i = 0; i < size; i++)
@@ -1228,7 +1255,8 @@ static PyObject *magidict_deepcopy_recursive(PyObject *item, PyObject *memo)
     if (PyObject_TypeCheck(item, &MagiDictType))
     {
         MagiDictObject *src = (MagiDictObject *)item;
-        MagiDictObject *copied = (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+        MagiDictObject *copied =
+            (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
         if (copied == NULL)
         {
             Py_DECREF(item_id);
@@ -1277,7 +1305,8 @@ static PyObject *magidict_deepcopy_recursive(PyObject *item, PyObject *memo)
         return NULL;
     }
 
-    PyObject *result = PyObject_CallFunctionObjArgs(deepcopy_func, item, memo, NULL);
+    PyObject *result =
+        PyObject_CallFunctionObjArgs(deepcopy_func, item, memo, NULL);
     Py_DECREF(deepcopy_func);
     Py_DECREF(item_id);
 
@@ -1296,7 +1325,8 @@ static PyObject *magidict_deepcopy(MagiDictObject *self, PyObject *args)
 }
 
 /* __getstate__ for pickling */
-static PyObject *magidict_getstate(MagiDictObject *self, PyObject *Py_UNUSED(ignored))
+static PyObject *magidict_getstate(MagiDictObject *self,
+                                   PyObject *Py_UNUSED(ignored))
 {
     PyObject *state = PyDict_New();
     if (state == NULL)
@@ -1367,32 +1397,30 @@ static PyObject *magidict_setstate(MagiDictObject *self, PyObject *state)
 }
 
 /* __reduce_ex__ for pickling */
-static PyObject *magidict_reduce_ex(MagiDictObject *self, PyObject *protocol)
+static PyObject *magidict_reduce_ex(MagiDictObject *self,
+                                    PyObject *Py_UNUSED(protocol))
 {
     PyObject *state = magidict_getstate(self, NULL);
     if (state == NULL)
         return NULL;
 
-    PyObject *result = PyTuple_Pack(
-        5,
-        (PyObject *)&MagiDictType,
-        PyTuple_New(0),
-        state,
-        Py_None,
-        Py_None);
+    PyObject *result = PyTuple_Pack(5, (PyObject *)&MagiDictType, PyTuple_New(0),
+                                    state, Py_None, Py_None);
 
     Py_DECREF(state);
     return result;
 }
 
 /* filter method - complex implementation */
-static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject *kwds)
+static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
+                                 PyObject *kwds)
 {
     PyObject *function = Py_None;
     int drop_empty = 0;
 
     static char *kwlist[] = {"function", "drop_empty", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", kwlist, &function, &drop_empty))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", kwlist, &function,
+                                     &drop_empty))
     {
         return NULL;
     }
@@ -1401,7 +1429,8 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject 
     if (function == Py_None)
     {
         PyObject *lambda_str = PyUnicode_FromString("lambda x: x is not None");
-        PyObject *compile_result = Py_CompileString(PyUnicode_AsUTF8(lambda_str), "<string>", Py_eval_input);
+        PyObject *compile_result = Py_CompileString(PyUnicode_AsUTF8(lambda_str),
+                                                    "<string>", Py_eval_input);
         Py_DECREF(lambda_str);
         if (compile_result == NULL)
             return NULL;
@@ -1421,7 +1450,8 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject 
         Py_INCREF(function);
     }
 
-    MagiDictObject *filtered = (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
+    MagiDictObject *filtered =
+        (MagiDictObject *)MagiDictType.tp_alloc(&MagiDictType, 0);
     if (filtered == NULL)
     {
         Py_DECREF(function);
@@ -1439,13 +1469,15 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject 
         return NULL;
     }
 
-    PyObject *signature_func = PyObject_GetAttrString(inspect_module, "signature");
+    PyObject *signature_func =
+        PyObject_GetAttrString(inspect_module, "signature");
     Py_DECREF(inspect_module);
 
     int num_args = 1;
     if (signature_func != NULL)
     {
-        PyObject *sig = PyObject_CallFunctionObjArgs(signature_func, function, NULL);
+        PyObject *sig =
+            PyObject_CallFunctionObjArgs(signature_func, function, NULL);
         Py_DECREF(signature_func);
 
         if (sig != NULL)
@@ -1454,7 +1486,7 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args, PyObject 
             Py_DECREF(sig);
             if (params != NULL)
             {
-                num_args = PyDict_Size(params);
+                num_args = (int)PyDict_Size(params);
                 Py_DECREF(params);
             }
         }
@@ -1554,7 +1586,22 @@ static PyMappingMethods magidict_as_mapping = {
 };
 
 /* Type definition */
-static PyTypeObject MagiDictType = {PyVarObject_HEAD_INIT(NULL, 0)};
+static PyTypeObject MagiDictType = {
+    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "magidict.MagiDict",
+    .tp_doc = PyDoc_STR(
+        "A dictionary with safe attribute access and recursive conversion"),
+    .tp_basicsize = sizeof(MagiDictObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = magidict_new,
+    .tp_init = (initproc)magidict_init,
+    .tp_dealloc = (destructor)magidict_dealloc,
+    .tp_repr = (reprfunc)magidict_repr,
+    .tp_as_mapping = &magidict_as_mapping,
+    .tp_getattro = (getattrofunc)magidict_getattro,
+    .tp_richcompare = (richcmpfunc)magidict_richcompare,
+    .tp_methods = magidict_methods,
+};
 
 /* Module-level functions */
 
@@ -1582,7 +1629,8 @@ static PyObject *module_none(PyObject *self, PyObject *obj)
     if (PyObject_TypeCheck(obj, &MagiDictType))
     {
         MagiDictObject *md = (MagiDictObject *)obj;
-        if (PyDict_Size((PyObject *)md) == 0 && (md->from_none || md->from_missing))
+        if (PyDict_Size((PyObject *)md) == 0 &&
+            (md->from_none || md->from_missing))
         {
             Py_RETURN_NONE;
         }
@@ -1593,7 +1641,8 @@ static PyObject *module_none(PyObject *self, PyObject *obj)
 }
 
 /* magi_loads function */
-static PyObject *module_magi_loads(PyObject *self, PyObject *args, PyObject *kwds)
+static PyObject *module_magi_loads(PyObject *self, PyObject *args,
+                                   PyObject *kwds)
 {
     const char *json_str;
 
@@ -1623,7 +1672,8 @@ static PyObject *module_magi_loads(PyObject *self, PyObject *args, PyObject *kwd
     PyObject *kwargs = PyDict_New();
     PyDict_SetItemString(kwargs, "object_hook", (PyObject *)&MagiDictType);
 
-    PyObject *result = PyObject_Call(loads_func, PyTuple_Pack(1, json_str_obj), kwargs);
+    PyObject *result =
+        PyObject_Call(loads_func, PyTuple_Pack(1, json_str_obj), kwargs);
 
     Py_DECREF(loads_func);
     Py_DECREF(json_str_obj);
@@ -1633,7 +1683,8 @@ static PyObject *module_magi_loads(PyObject *self, PyObject *args, PyObject *kwd
 }
 
 /* magi_load function */
-static PyObject *module_magi_load(PyObject *self, PyObject *args, PyObject *kwds)
+static PyObject *module_magi_load(PyObject *self, PyObject *args,
+                                  PyObject *kwds)
 {
     PyObject *fp;
 
@@ -1679,16 +1730,18 @@ static PyMethodDef module_methods[] = {
 /* Module definition */
 static PyModuleDef magidictmodule = {
     PyModuleDef_HEAD_INIT,
-    "_magidict",
-    PyDoc_STR("MagiDict - A recursive dictionary with safe attribute access"),
-    -1,
-    module_methods,
-    NULL,
-    NULL,
-    NULL,
-    NULL};
+    .m_name = "magidict",
+    .m_doc = PyDoc_STR(
+        "MagiDict - A recursive dictionary with safe attribute access"),
+    .m_size = -1,
+    .m_methods = module_methods,
+};
 
 /* Module initialization */
+/* For a package extension built as "magidict._magidict", the import machinery
+    expects the init symbol to match the module name with dots replaced by
+    underscores. Distutils emits a symbol for "magidict._magidict" as
+    PyInit__magidict (note the leading underscore), so provide that name here. */
 PyMODINIT_FUNC PyInit__magidict(void)
 {
     PyObject *m;
@@ -1698,25 +1751,8 @@ PyMODINIT_FUNC PyInit__magidict(void)
     if (_MISSING == NULL)
         return NULL;
 
-    /* Set fields that can't be initialized statically in MSVC */
+    /* Set base type before PyType_Ready */
     MagiDictType.tp_base = &PyDict_Type;
-    MagiDictType.tp_as_mapping = &magidict_as_mapping;
-
-    /* Fill remaining fields for MagiDictType */
-    MagiDictType.tp_name = "magidict.MagiDict";
-    MagiDictType.tp_basicsize = sizeof(MagiDictObject);
-    MagiDictType.tp_itemsize = 0;
-    MagiDictType.tp_dealloc = (destructor)magidict_dealloc;
-    MagiDictType.tp_repr = (reprfunc)magidict_repr;
-    MagiDictType.tp_as_mapping = &magidict_as_mapping;
-    MagiDictType.tp_getattro = (getattrofunc)magidict_getattro;
-    MagiDictType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
-    MagiDictType.tp_doc = PyDoc_STR("A dictionary with safe attribute access and recursive conversion");
-    MagiDictType.tp_richcompare = (richcmpfunc)magidict_richcompare;
-    MagiDictType.tp_methods = magidict_methods;
-    MagiDictType.tp_base = &PyDict_Type;
-    MagiDictType.tp_init = (initproc)magidict_init;
-    MagiDictType.tp_new = magidict_new;
 
     if (PyType_Ready(&MagiDictType) < 0)
         return NULL;
