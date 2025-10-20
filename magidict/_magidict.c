@@ -1554,23 +1554,7 @@ static PyMappingMethods magidict_as_mapping = {
 };
 
 /* Type definition */
-static PyTypeObject MagiDictType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-        .tp_name = "magidict.MagiDict",
-    .tp_doc = PyDoc_STR("A dictionary with safe attribute access and recursive conversion"),
-    .tp_basicsize = sizeof(MagiDictObject),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = magidict_new,
-    .tp_init = (initproc)magidict_init,
-    .tp_dealloc = (destructor)magidict_dealloc,
-    .tp_repr = (reprfunc)magidict_repr,
-    .tp_as_mapping = &magidict_as_mapping,
-    .tp_getattro = (getattrofunc)magidict_getattro,
-    .tp_richcompare = (richcmpfunc)magidict_richcompare,
-    .tp_methods = magidict_methods,
-    .tp_base = &PyDict_Type,
-};
+static PyTypeObject MagiDictType = {PyVarObject_HEAD_INIT(NULL, 0)};
 
 /* Module-level functions */
 
@@ -1695,14 +1679,17 @@ static PyMethodDef module_methods[] = {
 /* Module definition */
 static PyModuleDef magidictmodule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "magidict",
-    .m_doc = PyDoc_STR("MagiDict - A recursive dictionary with safe attribute access"),
-    .m_size = -1,
-    .m_methods = module_methods,
-};
+    "_magidict",
+    PyDoc_STR("MagiDict - A recursive dictionary with safe attribute access"),
+    -1,
+    module_methods,
+    NULL,
+    NULL,
+    NULL,
+    NULL};
 
 /* Module initialization */
-PyMODINIT_FUNC PyInit_magidict(void)
+PyMODINIT_FUNC PyInit__magidict(void)
 {
     PyObject *m;
 
@@ -1710,6 +1697,26 @@ PyMODINIT_FUNC PyInit_magidict(void)
     _MISSING = PyUnicode_FromString("_MISSING_SENTINEL");
     if (_MISSING == NULL)
         return NULL;
+
+    /* Set fields that can't be initialized statically in MSVC */
+    MagiDictType.tp_base = &PyDict_Type;
+    MagiDictType.tp_as_mapping = &magidict_as_mapping;
+
+    /* Fill remaining fields for MagiDictType */
+    MagiDictType.tp_name = "magidict.MagiDict";
+    MagiDictType.tp_basicsize = sizeof(MagiDictObject);
+    MagiDictType.tp_itemsize = 0;
+    MagiDictType.tp_dealloc = (destructor)magidict_dealloc;
+    MagiDictType.tp_repr = (reprfunc)magidict_repr;
+    MagiDictType.tp_as_mapping = &magidict_as_mapping;
+    MagiDictType.tp_getattro = (getattrofunc)magidict_getattro;
+    MagiDictType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
+    MagiDictType.tp_doc = PyDoc_STR("A dictionary with safe attribute access and recursive conversion");
+    MagiDictType.tp_richcompare = (richcmpfunc)magidict_richcompare;
+    MagiDictType.tp_methods = magidict_methods;
+    MagiDictType.tp_base = &PyDict_Type;
+    MagiDictType.tp_init = (initproc)magidict_init;
+    MagiDictType.tp_new = magidict_new;
 
     if (PyType_Ready(&MagiDictType) < 0)
         return NULL;
