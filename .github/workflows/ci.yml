@@ -56,12 +56,10 @@ jobs:
           pytest tests/benchmark --benchmark-only --benchmark-save=main --benchmark-autosave -v || true
 
       - name: Bundle benchmark results
-        if: env.BENCHMARKS_EXIST == 'true'
         run: |
           tar -czf benchmark-results-py${{ matrix.python-version }}.tar.gz .benchmarks/
 
       - name: Upload benchmark results
-        if: env.BENCHMARKS_EXIST == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-py${{ matrix.python-version }}
