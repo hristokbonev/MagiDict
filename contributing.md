@@ -59,11 +59,11 @@ Please aim to include appropriate tests covering both success and edge cases.
    - Reference to related issues
    - Note any breaking changes
 
-## Important Notes
+## Notes
 
 - **Preserve backward compatibility** when possible
-- **Document breaking changes** clearly
-- **Handle edge cases**: None values, circular references, deep nesting
+- **Document breaking changes**
+- **Handle edge cases**: None values, circular references, deep nesting, pickleability, etc.
 
 ## License
 
