@@ -53,25 +53,17 @@ jobs:
       - name: Run benchmarks
         continue-on-error: true
         run: |
-          echo "Running benchmarks..."
           pytest tests/benchmark --benchmark-only --benchmark-save=main --benchmark-autosave -v || true
 
-      - name: Check benchmark results
+      - name: Check for benchmark files
         run: |
-          echo "Checking for benchmark directory..."
-          if [ -d ".benchmarks" ]; then
-            echo "Directory exists. Contents:"
-            ls -laR .benchmarks/
-            if [ -n "$(ls -A .benchmarks 2>/dev/null)" ]; then
-              echo "BENCHMARKS_EXIST=true" >> $GITHUB_ENV
-              echo "Files found in .benchmarks"
-            else
-              echo "BENCHMARKS_EXIST=false" >> $GITHUB_ENV
-              echo "Directory exists but is empty"
-            fi
+          if [ -d ".benchmarks" ] && [ -n "$(find .benchmarks -type f)" ]; then
+            echo "BENCHMARKS_EXIST=true" >> $GITHUB_ENV
+            echo "Benchmark files found:"
+            find .benchmarks -type f
           else
             echo "BENCHMARKS_EXIST=false" >> $GITHUB_ENV
-            echo "No .benchmarks directory found"
+            echo "No benchmark files found"
           fi
 
       - name: Upload benchmark results
