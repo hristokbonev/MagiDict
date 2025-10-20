@@ -1439,7 +1439,298 @@ static PyObject *magidict_reduce_ex(MagiDictObject *self,
     return result;
 }
 
-/* filter method - complex implementation */
+/* Forward declaration for recursive filtering */
+static PyObject *magidict_filter_nested_seq(PyObject *seq, PyObject *function,
+                                            int num_args, int drop_empty);
+static PyObject *magidict_filter_recursive(PyObject *obj, PyObject *function,
+                                           int num_args, int drop_empty);
+
+/* Helper function to filter nested sequences recursively */
+static PyObject *magidict_filter_nested_seq(PyObject *seq, PyObject *function,
+                                            int num_args, int drop_empty)
+{
+    if (!PySequence_Check(seq) || PyUnicode_Check(seq) || PyBytes_Check(seq))
+    {
+        Py_INCREF(seq);
+        return seq;
+    }
+
+    Py_ssize_t size = PySequence_Size(seq);
+    PyObject *new_seq = PyList_New(0);
+    if (new_seq == NULL)
+        return NULL;
+
+    for (Py_ssize_t i = 0; i < size; i++)
+    {
+        PyObject *item = PySequence_GetItem(seq, i);
+        if (item == NULL)
+        {
+            Py_DECREF(new_seq);
+            return NULL;
+        }
+
+        PyObject *filtered_item = NULL;
+
+        /* Handle MagiDict */
+        if (PyObject_TypeCheck(item, &MagiDictType))
+        {
+            filtered_item = magidict_filter_recursive(item, function, num_args, drop_empty);
+            if (filtered_item == NULL)
+            {
+                Py_DECREF(item);
+                Py_DECREF(new_seq);
+                return NULL;
+            }
+
+            /* Check if we should add it (non-empty or drop_empty is false) */
+            int should_add = !drop_empty || PyDict_Size(filtered_item) > 0;
+            if (should_add)
+            {
+                PyList_Append(new_seq, filtered_item);
+            }
+            Py_DECREF(filtered_item);
+        }
+        /* Handle regular dict */
+        else if (PyDict_Check(item))
+        {
+            /* Convert to MagiDict and filter */
+            PyObject *magidict_item = PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, item, NULL);
+            Py_DECREF(item);
+            if (magidict_item == NULL)
+            {
+                Py_DECREF(new_seq);
+                return NULL;
+            }
+
+            filtered_item = magidict_filter_recursive(magidict_item, function, num_args, drop_empty);
+            Py_DECREF(magidict_item);
+
+            if (filtered_item == NULL)
+            {
+                Py_DECREF(new_seq);
+                return NULL;
+            }
+
+            int should_add = !drop_empty || PyDict_Size(filtered_item) > 0;
+            if (should_add)
+            {
+                PyList_Append(new_seq, filtered_item);
+            }
+            Py_DECREF(filtered_item);
+        }
+        /* Handle nested sequences */
+        else if (PySequence_Check(item) && !PyUnicode_Check(item) && !PyBytes_Check(item))
+        {
+            filtered_item = magidict_filter_nested_seq(item, function, num_args, drop_empty);
+            Py_DECREF(item);
+
+            if (filtered_item == NULL)
+            {
+                Py_DECREF(new_seq);
+                return NULL;
+            }
+
+            int should_add = !drop_empty || PySequence_Size(filtered_item) > 0;
+            if (should_add)
+            {
+                PyList_Append(new_seq, filtered_item);
+            }
+            Py_DECREF(filtered_item);
+        }
+        /* Handle scalar values */
+        else
+        {
+            PyObject *result;
+            if (num_args == 2)
+            {
+                PyObject *index = PyLong_FromSsize_t(i);
+                result = PyObject_CallFunctionObjArgs(function, index, item, NULL);
+                Py_DECREF(index);
+            }
+            else
+            {
+                result = PyObject_CallFunctionObjArgs(function, item, NULL);
+            }
+
+            Py_DECREF(item);
+
+            if (result == NULL)
+            {
+                Py_DECREF(new_seq);
+                return NULL;
+            }
+
+            int is_true = PyObject_IsTrue(result);
+            Py_DECREF(result);
+
+            if (is_true)
+            {
+                /* Need to get the item again since we decreffed it */
+                PyObject *item_again = PySequence_GetItem(seq, i);
+                if (item_again == NULL)
+                {
+                    Py_DECREF(new_seq);
+                    return NULL;
+                }
+                PyList_Append(new_seq, item_again);
+                Py_DECREF(item_again);
+            }
+        }
+    }
+
+    /* Convert back to original sequence type if possible */
+    if (!drop_empty || PyList_Size(new_seq) > 0)
+    {
+        if (PyList_Check(seq))
+        {
+            return new_seq;
+        }
+        else if (PyTuple_Check(seq))
+        {
+            PyObject *new_tuple = PyList_AsTuple(new_seq);
+            Py_DECREF(new_seq);
+            return new_tuple;
+        }
+        else
+        {
+            /* Try to convert to original type */
+            PyObject *result = PyObject_CallFunctionObjArgs((PyObject *)Py_TYPE(seq), new_seq, NULL);
+            if (result == NULL)
+            {
+                PyErr_Clear();
+                return new_seq;
+            }
+            Py_DECREF(new_seq);
+            return result;
+        }
+    }
+
+    Py_DECREF(new_seq);
+    Py_RETURN_NONE;
+}
+
+/* Helper function to recursively filter a MagiDict or dict */
+static PyObject *magidict_filter_recursive(PyObject *obj, PyObject *function,
+                                           int num_args, int drop_empty)
+{
+    if (!PyDict_Check(obj))
+    {
+        Py_INCREF(obj);
+        return obj;
+    }
+
+    MagiDictObject *filtered = (MagiDictObject *)PyObject_CallFunctionObjArgs(
+        (PyObject *)&MagiDictType, NULL);
+    if (filtered == NULL)
+        return NULL;
+
+    filtered->from_none = 0;
+    filtered->from_missing = 0;
+
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+
+    while (PyDict_Next(obj, &pos, &key, &value))
+    {
+        PyObject *filtered_value = NULL;
+        int should_add = 0;
+
+        /* Handle MagiDict values */
+        if (PyObject_TypeCheck(value, &MagiDictType))
+        {
+            filtered_value = magidict_filter_recursive(value, function, num_args, drop_empty);
+            if (filtered_value == NULL)
+            {
+                Py_DECREF(filtered);
+                return NULL;
+            }
+            should_add = !drop_empty || PyDict_Size(filtered_value) > 0;
+        }
+        /* Handle regular dict values */
+        else if (PyDict_Check(value))
+        {
+            PyObject *magidict_value = PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, value, NULL);
+            if (magidict_value == NULL)
+            {
+                Py_DECREF(filtered);
+                return NULL;
+            }
+
+            filtered_value = magidict_filter_recursive(magidict_value, function, num_args, drop_empty);
+            Py_DECREF(magidict_value);
+
+            if (filtered_value == NULL)
+            {
+                Py_DECREF(filtered);
+                return NULL;
+            }
+            should_add = !drop_empty || PyDict_Size(filtered_value) > 0;
+        }
+        /* Handle sequence values */
+        else if (PySequence_Check(value) && !PyUnicode_Check(value) && !PyBytes_Check(value))
+        {
+            filtered_value = magidict_filter_nested_seq(value, function, num_args, drop_empty);
+            if (filtered_value == NULL)
+            {
+                Py_DECREF(filtered);
+                return NULL;
+            }
+
+            if (filtered_value == Py_None)
+            {
+                Py_DECREF(filtered_value);
+                should_add = 0;
+            }
+            else
+            {
+                should_add = !drop_empty || PySequence_Size(filtered_value) > 0;
+            }
+        }
+        /* Handle scalar values */
+        else
+        {
+            PyObject *result;
+            if (num_args == 2)
+            {
+                result = PyObject_CallFunctionObjArgs(function, key, value, NULL);
+            }
+            else
+            {
+                result = PyObject_CallFunctionObjArgs(function, value, NULL);
+            }
+
+            if (result == NULL)
+            {
+                Py_DECREF(filtered);
+                return NULL;
+            }
+
+            int is_true = PyObject_IsTrue(result);
+            Py_DECREF(result);
+
+            if (is_true)
+            {
+                Py_INCREF(value);
+                filtered_value = value;
+                should_add = 1;
+            }
+        }
+
+        if (should_add && filtered_value != NULL)
+        {
+            PyDict_SetItem((PyObject *)filtered, key, filtered_value);
+            Py_DECREF(filtered_value);
+        }
+        else if (filtered_value != NULL)
+        {
+            Py_DECREF(filtered_value);
+        }
+    }
+
+    return (PyObject *)filtered;
+}
+
+/* Main filter method */
 static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
                                  PyObject *kwds)
 {
@@ -1453,10 +1744,14 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
         return NULL;
     }
 
-    /* Create lambda that checks for not None if no function provided */
+    /* Create default function if none provided */
+    int should_decref_function = 0;
     if (function == Py_None)
     {
         PyObject *lambda_str = PyUnicode_FromString("lambda x: x is not None");
+        if (lambda_str == NULL)
+            return NULL;
+
         PyObject *compile_result = Py_CompileString(PyUnicode_AsUTF8(lambda_str),
                                                     "<string>", Py_eval_input);
         Py_DECREF(lambda_str);
@@ -1472,40 +1767,31 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
 
         if (function == NULL)
             return NULL;
+
+        should_decref_function = 1;
     }
     else
     {
         Py_INCREF(function);
+        should_decref_function = 1;
     }
 
-    MagiDictObject *filtered =
-        (MagiDictObject *)PyObject_CallFunctionObjArgs((PyObject *)&MagiDictType, NULL);
-    if (filtered == NULL)
-    {
-        Py_DECREF(function);
-        return NULL;
-    }
-    filtered->from_none = 0;
-    filtered->from_missing = 0;
-
-    /* Determine number of args function accepts */
+    /* Determine number of arguments the function accepts */
     PyObject *inspect_module = PyImport_ImportModule("inspect");
     if (inspect_module == NULL)
     {
-        Py_DECREF(function);
-        Py_DECREF(filtered);
+        if (should_decref_function)
+            Py_DECREF(function);
         return NULL;
     }
 
-    PyObject *signature_func =
-        PyObject_GetAttrString(inspect_module, "signature");
+    PyObject *signature_func = PyObject_GetAttrString(inspect_module, "signature");
     Py_DECREF(inspect_module);
 
     int num_args = 1;
     if (signature_func != NULL)
     {
-        PyObject *sig =
-            PyObject_CallFunctionObjArgs(signature_func, function, NULL);
+        PyObject *sig = PyObject_CallFunctionObjArgs(signature_func, function, NULL);
         Py_DECREF(signature_func);
 
         if (sig != NULL)
@@ -1524,40 +1810,13 @@ static PyObject *magidict_filter(MagiDictObject *self, PyObject *args,
         }
     }
 
-    /* Filter items */
-    PyObject *key, *value;
-    Py_ssize_t pos = 0;
+    /* Call the recursive filter */
+    PyObject *result = magidict_filter_recursive((PyObject *)self, function, num_args, drop_empty);
 
-    while (PyDict_Next((PyObject *)self, &pos, &key, &value))
-    {
-        PyObject *result;
-        if (num_args == 2)
-        {
-            result = PyObject_CallFunctionObjArgs(function, key, value, NULL);
-        }
-        else
-        {
-            result = PyObject_CallFunctionObjArgs(function, value, NULL);
-        }
+    if (should_decref_function)
+        Py_DECREF(function);
 
-        if (result == NULL)
-        {
-            Py_DECREF(function);
-            Py_DECREF(filtered);
-            return NULL;
-        }
-
-        int is_true = PyObject_IsTrue(result);
-        Py_DECREF(result);
-
-        if (is_true)
-        {
-            PyDict_SetItem((PyObject *)filtered, key, value);
-        }
-    }
-
-    Py_DECREF(function);
-    return (PyObject *)filtered;
+    return result;
 }
 
 /* Method definitions */
