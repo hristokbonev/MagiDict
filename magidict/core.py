@@ -16,8 +16,6 @@ try:
     _has_c_hook = True
 except ImportError:
     _has_c_hook = False
-    _c_fast_hook = None
-    _c_fast_hook_with_memo = None
 
 
 class MagiDict(dict):

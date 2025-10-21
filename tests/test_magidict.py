@@ -6991,7 +6991,7 @@ class TestCoreMissingCoverage(TestCase):
         })
 
         # default filter removes None
-        f = md.filter()
+        f = md.filter(None)
         self.assertIn("a", f)
         self.assertNotIn("b", f)
         # predicate with two args (index, value) for sequences
