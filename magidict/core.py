@@ -483,6 +483,7 @@ class MagiDict(dict):
 
         Parameters:
             function: A function that takes one argument (value) or two arguments (key, value) and returns True or False.
+                      If None, filters out items with value None.
             drop_empty: If True, empty MagiDicts and sequences are omitted from the result.
 
         Returns:
