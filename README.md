@@ -749,7 +749,7 @@ md.sg(('tuple', 'missing'))  # KeyError - raises KeyError
 
 ## Contributing
 
-Contributions are welcome and appreciated! Please see the [CONTRIBUTING.md](contributing.md) for more information.
+Contributions are welcome and appreciated! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 
