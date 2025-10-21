@@ -197,6 +197,8 @@ md.user.nickname.stage_name  # MagiDict({})
 
 # Bracket access returns the actual None value
 md.user['nickname']  # None
+# Safe access with conversion back to None
+none(md.user.nickname)  # None
 ```
 
 ### 7. Standard Dictionary Behavior Preserved
@@ -365,7 +367,7 @@ Searches for the first occurrence of the specified key in the `MagiDict` and its
 
 - `key`: The key to search for
 
-**Returns:** The value associated with the key, or raises `KeyError` if not found
+**Returns:** The value associated with the key or `None` if not found
 
 **Example:**
 
@@ -382,7 +384,7 @@ Searches for all occurrences of the specified key in the `MagiDict` and its nest
 
 - `keys`: The key to search for
 
-**Returns:** A list of values associated with the found values
+**Returns:** A list of values associated with the keys or an empty list if none found
 
 **Example:**
 
