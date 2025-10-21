@@ -490,11 +490,7 @@ class MagiDict(dict):
         """
 
         if function is None:
-
-            def _function(x):
-                return x is not None
-
-            function = _function
+            return self.filter(lambda x: x is not None, drop_empty=drop_empty)
 
         num_args = len(signature(function).parameters)
 
