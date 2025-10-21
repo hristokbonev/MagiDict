@@ -96,6 +96,9 @@ Full documentation available in the GitHub [Wiki](https://github.com/hristokbone
       ┌───────┐     ┌────────────────┐  ┌──────────┐  ┌──────────────┐
       │ d.bar │     │ d["foo","bar"] │  │ d["foo"] │  │ d["foo.bar"] │
       └───────┘     └────────────────┘  └──────────┘  └──────────────┘
+
+*Safe* access returns empty MagiDict for missing keys or None values.
+*Strict* access raises KeyError for missing keys and returns None for None values.
 ```
 
 ### 1. Attribute-Style Access
