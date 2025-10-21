@@ -74,6 +74,30 @@ Full documentation available in the GitHub [Wiki](https://github.com/hristokbone
 
 ## Key Features
 
+```ascii
+         ┌───────────────────┐
+         │   Access Styles   │
+         └─────────┬─────────┘
+                   │
+         ┌─────────┴─────────┐
+         │                   │
+         ▼                   ▼
+┌─────────────────┐  ┌────────────────┐
+│ Attribute Style │  │ Bracket Style  │
+│        .        │  │       []       ├──────┐
+└─────────┬───────┘  └───────┬────────┘      │
+          │                  │               │
+          ▼                  ▼               ▼
+     ┌──────────┐      ┌──────────┐     ┌─────────┐
+     │   Safe   │      │   Safe   │     │ Strict  ├────────────┐
+     └─────┬────┘      └─────┬────┘     └─────┬───┘            │
+           │                 │                │                │
+           ▼                 ▼                ▼                ▼
+     ┌──────────┐  ┌────────────────┐  ┌────────────┐  ┌────────────────┐
+     │ foo.bar  │  │ d["foo","bar"] │  │ foo["bar"] │  │ foo["bar.baz"] │
+     └──────────┘  └────────────────┘  └────────────┘  └────────────────┘
+```
+
 ### 1. Attribute-Style Access
 
 Access dictionary keys using dot notation instead of bracket notation. Missing keys and keys with `None` values return an empty `MagiDict`:
