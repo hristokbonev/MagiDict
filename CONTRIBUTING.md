@@ -67,7 +67,7 @@ Please aim to include appropriate tests covering both success and edge cases.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License. Please ensure that your code does not violate any third-party licenses.
+By contributing, you agree that your contributions will be licensed under the MIT License. Please ensure that your contribution does not violate any third-party licenses.
 
 ---
 
