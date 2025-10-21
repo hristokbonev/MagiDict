@@ -475,7 +475,7 @@ class MagiDict(dict):
 
         return results
 
-    def filter(self, function: Any = None, drop_empty=False) -> "MagiDict":
+    def filter(self, function: Any, drop_empty=False) -> "MagiDict":
         """
         Returns a new MagiDict containing only the items for which the function(key) or function(key, value)
         returns True. Supports nested dicts and sequences. If drop_empty is True, empty MagiDicts and sequences
