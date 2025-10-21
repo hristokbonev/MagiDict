@@ -1,6 +1,6 @@
 # Contributing to MagiDict
 
-Thank you for your interest in contributing to MagiDict! 🎉
+Thank you for your interest in contributing to MagiDict!
 
 ## How to Contribute
 
