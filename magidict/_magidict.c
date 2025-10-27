@@ -2,6 +2,9 @@
 #include <Python.h>
 
 static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *magidict_class);
+static PyObject *fast_hook(PyObject *self, PyObject *args);
+static PyObject *py_fast_hook_with_memo(PyObject *self, PyObject *args);
+static PyObject *py_split_dotted(PyObject *self, PyObject *args);
 
 static PyObject *fast_hook_with_memo(PyObject *item, PyObject *memo, PyObject *magidict_class)
 {
@@ -201,11 +204,87 @@ static PyObject *py_fast_hook_with_memo(PyObject *self, PyObject *args)
     return fast_hook_with_memo(item, memo, magidict_class);
 }
 
+static PyObject *
+py_split_dotted(PyObject *self, PyObject *args)
+{
+    PyObject *py_s = NULL;
+    if (!PyArg_ParseTuple(args, "U", &py_s))
+    { /* accept only Unicode objects */
+        return NULL;
+    }
+
+    Py_ssize_t length = PyUnicode_GetLength(py_s);
+    PyObject *result = PyList_New(0);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    Py_UCS4 quote = 0; /* 0 = not inside a quote, otherwise store quote char */
+    Py_ssize_t start = 0;
+
+    for (Py_ssize_t i = 0; i < length; ++i)
+    {
+        Py_UCS4 ch = PyUnicode_ReadChar(py_s, i);
+        /* toggle quote state when encountering a quote char */
+        if (ch == (Py_UCS4)'\'' || ch == (Py_UCS4)'"')
+        {
+            if (quote == 0)
+            {
+                quote = ch;
+            }
+            else if (quote == ch)
+            {
+                quote = 0;
+            }
+            /* continue; quote characters are part of the token */
+        }
+
+        /* split on dot only when not inside quotes */
+        if (ch == (Py_UCS4)'.' && quote == 0)
+        {
+            PyObject *part = PyUnicode_Substring(py_s, start, i);
+            if (part == NULL)
+            {
+                Py_DECREF(result);
+                return NULL;
+            }
+            if (PyList_Append(result, part) < 0)
+            {
+                Py_DECREF(part);
+                Py_DECREF(result);
+                return NULL;
+            }
+            Py_DECREF(part);
+            start = i + 1;
+        }
+    }
+
+    /* append last part (from start to end) */
+    PyObject *last = PyUnicode_Substring(py_s, start, length);
+    if (last == NULL)
+    {
+        Py_DECREF(result);
+        return NULL;
+    }
+    if (PyList_Append(result, last) < 0)
+    {
+        Py_DECREF(last);
+        Py_DECREF(result);
+        return NULL;
+    }
+    Py_DECREF(last);
+
+    return result;
+}
+
 static PyMethodDef module_methods[] = {
     {"fast_hook", fast_hook, METH_VARARGS,
      "Fast recursive conversion of dicts to MagiDicts (creates own memo)"},
     {"fast_hook_with_memo", py_fast_hook_with_memo, METH_VARARGS,
      "Fast recursive conversion of dicts to MagiDicts (uses provided memo)"},
+    {"split_dotted", py_split_dotted, METH_VARARGS,
+     "Split on dots outside quotes: split_dotted(s: str) -> list[str]"},
     {NULL, NULL, 0, NULL}};
 
 static PyModuleDef magidictmodule = {
@@ -215,6 +294,7 @@ static PyModuleDef magidictmodule = {
     .m_size = -1,
     .m_methods = module_methods,
 };
+
 
 PyMODINIT_FUNC PyInit__magidict(void)
 {

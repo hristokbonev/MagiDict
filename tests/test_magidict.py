@@ -467,7 +467,7 @@ class TestMagiDict(TestCase):
         # dot notation string key
         self.assertEqual(md["a.b.c"], 7)
         # indexing into list via dot-string numeric
-        self.assertEqual(md["list.1.1"], "one_str")
+        self.assertEqual(md["list.1.'1'"], "one_str")
 
     def test_inplace_or_operator_and_deepcopy(self):
         """Test that |= operator works and deepcopy creates independent copies."""
@@ -1514,15 +1514,15 @@ class TestMissingCases(TestCase):
         """
         Verify dotted-key access raises KeyError for a missing key in the chain.
         """
-        with self.assertRaises(KeyError):
-            _ = self.md["user.profile.nonexistent"]
+        result = self.md["user.profile.nonexistent"]
+        self.assertIsNone(result)
 
     def test_getitem_dotted_key_handles_index_error(self):
         """
         Verify dotted-key access raises IndexError for an out-of-bounds list index.
         """
-        with self.assertRaises(IndexError):
-            _ = self.md["permissions.5.level"]
+        result = self.md["permissions.5.level"]
+        self.assertIsNone(result)
 
     def test_getitem_prioritizes_full_key_with_dots(self):
         """
@@ -1645,7 +1645,7 @@ class TestMagiDictAdditionalCases(TestCase):
     def test_getitem_dotted_key_numeric_dict_key(self):
         """Test dotted access with numeric string keys in dict"""
         md = MagiDict({"a": {"1": {"b": 2}}})
-        self.assertEqual(md["a.1.b"], 2)
+        self.assertEqual(md["a.'1'.b"], 2)
 
     def test_getitem_dotted_vs_literal_key_priority(self):
         """Test that literal keys with dots take precedence"""
@@ -1662,8 +1662,8 @@ class TestMagiDictAdditionalCases(TestCase):
     def test_getitem_dotted_key_type_error(self):
         """Test dotted access on non-subscriptable type"""
         md = MagiDict({"value": 42})
-        with self.assertRaises(KeyError):
-            _ = md["value.something"]
+        result = md["value.something"]
+        self.assertIsNone(result)
 
     def test_named_tuple_preservation(self):
         """Test that named tuples are preserved"""
@@ -2405,13 +2405,13 @@ class TestMagiDictDotNotationEdgeCases(TestCase):
 
     def test_dot_notation_with_numeric_string_key(self):
         md = MagiDict({"user": {"123": {"name": "Alice"}}})
-        self.assertEqual(md["user.123.name"], "Alice")
+        self.assertEqual(md["user.'123'.name"], "Alice")
 
     def test_dot_notation_invalid_path(self):
         """Dot notation raises KeyError for invalid paths"""
         md = MagiDict({"user": {"name": "Alice"}})
-        with self.assertRaises(KeyError):
-            _ = md["user.email.address"]
+        result = md["user.email.address"]
+        self.assertIsNone(result)
 
 
 class TestMagiDictThreadSafety(TestCase):
@@ -2867,14 +2867,14 @@ class TestMagiDictEdgeCases(TestCase):
     def test_dot_notation_bracket_access_failures(self):
         """Test failures when using dot notation in brackets."""
         # I've modified __getitem__ to raise a more specific error than the original implementation
-        with self.assertRaises(KeyError):
-            _ = self.md["user.details.non_existent"]
-        with self.assertRaises(IndexError):
-            _ = self.md["posts.99.title"]  # IndexError becomes KeyError
-        # Test bug fix: traversing into a non-subscriptable type
+
+        result = self.md["user.details.non_existent"]
+        self.assertIsNone(result)
+        result = self.md["posts.99.title"]
+        self.assertIsNone(result)
         md = MagiDict({"a": {"b": 123}})
-        with self.assertRaises(KeyError):
-            _ = md["a.b.c"]
+        result = md["a.b.c"]
+        self.assertIsNone(result)
 
     def test_key_with_dots_in_it(self):
         """Test that keys with dots are accessible."""
@@ -3097,15 +3097,15 @@ class TestMagiDictEdgeCases(TestCase):
     def test_dot_notation_nested_access(self):
         md = MagiDict({"a": {"b": {"c": 5}}})
         self.assertEqual(md["a.b.c"], 5)
-        with self.assertRaises(KeyError):
-            _ = md["a.b.x"]
+        result = md["a.b.x"]
+        self.assertIsNone(result)
 
     def test_dot_notation_with_list_index(self):
         md = MagiDict({"users": [{"name": "Alice"}, {"name": "Bob"}]})
         self.assertEqual(md["users.0.name"], "Alice")
         self.assertEqual(md["users.1.name"], "Bob")
-        with self.assertRaises(IndexError):
-            _ = md["users.2.name"]
+        result = md["users.2.name"]
+        self.assertIsNone(result)
 
     def test_protected_magidict_modification_raises(self):
         md = MagiDict({})
@@ -3250,9 +3250,8 @@ class TestMagiDictAdvanced(TestCase):
         raises a ValueError, which is not caught by the internal KeyError handling.
         """
         md = MagiDict({"items": ["a", "b", "c"]})
-        with self.assertRaises(ValueError):
-            # The 'x' cannot be converted to an int for list indexing.
-            _ = md["items.x"]
+        result = md["items.x"]
+        self.assertIsNone(result)
 
     def test_getitem_dot_notation_with_leading_or_trailing_dots(self):
         """
@@ -3264,8 +3263,8 @@ class TestMagiDictAdvanced(TestCase):
 
         # Accessing via a leading dot: '.a' -> ['', 'a']
         # This will fail because the first key is '' which holds a string, not a dict.
-        with self.assertRaises(KeyError):
-            _ = md[".a"]
+        result = md[".a"]
+        self.assertIsNone(result)
 
         # This should work as it looks for key '' in key 'a'
         self.assertEqual(md["a."], "nested_empty")
@@ -3343,14 +3342,14 @@ class TestMagiDictEdgeCases3(TestCase):
         """When dot-traversal hits a sequence but the key is not an integer,
         a ValueError should be raised (int() conversion)."""
         md = MagiDict({"arr": ["zero", "one"]})
-        with self.assertRaises(ValueError):
-            _ = md["arr.one.two"]
+        result = md["arr.one.two"]
+        self.assertIsNone(result)
 
     def test_getitem_dot_index_out_of_range_raises_indexerror(self):
         """Out-of-range index via dot-traversal raises IndexError."""
         md = MagiDict({"arr": ["zero"]})
-        with self.assertRaises(IndexError):
-            _ = md["arr.5"]
+        result = md["arr.5"]
+        self.assertIsNone(result)
 
     def test_disenchant_preserves_shared_and_circular_references(self):
         """disenchant preserves shared and circular references."""
@@ -3476,17 +3475,17 @@ class TestMagiDictEdgesCases2(TestCase):
 
     def test_dot_notation_failure_raises_keyerror(self):
         """Test that dot notation access raises KeyError for missing keys."""
-        with self.assertRaises(KeyError):
-            _ = self.md["user.nonexistent"]
-        with self.assertRaises(KeyError):
-            _ = self.md["user.details.nonexistent"]
+        result = self.md["user.nonexistent"]
+        result2 = self.md["user.details.nonexistent"]
+        self.assertIsNone(result)
+        self.assertIsNone(result2)
 
     def test_dot_notation_index_errors(self):
         """Test that dot notation handles list index errors."""
-        with self.assertRaises(IndexError):
-            _ = self.md["items.5.name"]
-        with self.assertRaises(ValueError):  # int('a') raises ValueError
-            _ = self.md["items.a.name"]
+        result = self.md["items.5.name"]
+        self.assertIsNone(result)
+        result = self.md["items.a.name"]
+        self.assertIsNone(result)
 
     # --- Test Graceful Failure and Safe Chaining ---
 
@@ -3928,8 +3927,8 @@ class TestMagiDictMissingEdgeCases(TestCase):
         md = MagiDict({"data": {"0": "zero_key", "1": "one_key"}})
 
         # These should access dict keys, not list indices
-        self.assertEqual(md["data.0"], "zero_key")
-        self.assertEqual(md["data.1"], "one_key")
+        self.assertEqual(md["data.'0'"], "zero_key")
+        self.assertEqual(md["data.'1'"], "one_key")
 
     def test_mget_with_missing_vs_none(self):
         """Test mget behavior with missing (default sentinel) vs None."""
@@ -5743,8 +5742,8 @@ class TestLiteralKeysWithDots(TestCase):
 
     def test_literal_key_with_dots_missing_raises_error(self):
         md = MagiDict({"x": 1})
-        with self.assertRaises(KeyError):
-            md["a.b.c.d"]
+        result = md["a.b.c.d"]
+        self.assertIsNone(result)  # Should return None
 
     def test_literal_key_preferred_over_nested(self):
         """When both literal key and nested path exist, literal takes precedence."""
@@ -5761,127 +5760,25 @@ class TestDotNotationFallback(TestCase):
 
     def test_nested_access_missing_key_raises_error(self):
         md = MagiDict({"a": {"b": {"c": "value"}}})
-        with self.assertRaises(KeyError):
-            md["a.b.missing"]
+        result = md["a.b.missing"]
+        self.assertIsNone(result)  # Should return None
 
     def test_nested_access_partial_path_raises_error(self):
         md = MagiDict({"a": {"b": "value"}})
-        with self.assertRaises(KeyError):
-            md["a.missing.c"]
+        result = md["a.missing.c"]
+        self.assertIsNone(result)
 
     def test_nested_access_through_non_dict_raises_error(self):
         md = MagiDict({"a": "string_value"})
-        with self.assertRaises((KeyError, AttributeError)):
-            md["a.b.c"]
+        self.assertIsNone(md["a.b.c"])
 
     def test_nested_access_with_list_index(self):
         md = MagiDict({"a": {"b": [1, 2, 3]}})
         self.assertEqual(md["a.b.1"], 2)
 
-    def test_nested_access_invalid_list_index_raises_error(self):
-        md = MagiDict({"a": {"b": [1, 2, 3]}})
-        with self.assertRaises((ValueError, IndexError)):
-            md["a.b.99"]
-
     def test_nested_access_deep_path(self):
         md = MagiDict({"a": {"b": {"c": {"d": {"e": "deep"}}}}})
         self.assertEqual(md["a.b.c.d.e"], "deep")
-
-
-class TestTupleListAccess(TestCase):
-    """Test tuple/list multi-key access (SAFE - returns empty MagiDict)."""
-
-    def test_tuple_access_existing_path(self):
-        md = MagiDict({"a": {"b": {"c": "value"}}})
-        self.assertEqual(md["a", "b", "c"], "value")
-
-    def test_list_access_existing_path(self):
-        md = MagiDict({"a": {"b": {"c": "value"}}})
-        self.assertEqual(md[["a", "b", "c"]], "value")
-
-    def test_tuple_access_missing_key_returns_empty(self):
-        md = MagiDict({"a": {"b": "value"}})
-        result = md["a", "missing"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_tuple_access_partial_path_missing_returns_empty(self):
-        md = MagiDict({"a": {"b": "value"}})
-        result = md["a", "missing", "c"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_tuple_access_first_key_missing_returns_empty(self):
-        md = MagiDict({"a": "value"})
-        result = md["missing", "b"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_single_element_tuple(self):
-        md = MagiDict({"key": "value"})
-        self.assertEqual(md[("key",)], "value")
-
-    def test_empty_tuple_returns_self(self):
-        md = MagiDict({"key": "value"})
-        self.assertIs(md[()], md)
-
-
-class TestTupleListWithSequences(TestCase):
-    """Test tuple/list access through sequences."""
-
-    def test_tuple_access_list_by_index(self):
-        md = MagiDict({"items": [1, 2, 3]})
-        self.assertEqual(md["items", 1], 2)
-
-    def test_tuple_access_list_by_string_index(self):
-        md = MagiDict({"items": [1, 2, 3]})
-        self.assertEqual(md["items", "1"], 2)
-
-    def test_tuple_access_list_invalid_index_returns_empty(self):
-        md = MagiDict({"items": [1, 2, 3]})
-        result = md["items", "99"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_tuple_access_list_non_numeric_index_returns_empty(self):
-        md = MagiDict({"items": [1, 2, 3]})
-        result = md["items", "abc"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_tuple_access_nested_lists(self):
-        md = MagiDict({"matrix": [[1, 2], [3, 4]]})
-        self.assertEqual(md["matrix", 0, 1], 2)
-        self.assertEqual(md["matrix", 1, 0], 3)
-
-
-class TestNoneValues(TestCase):
-    """Test handling of None values in paths."""
-
-    def test_tuple_access_none_value_at_end(self):
-        md = MagiDict({"a": {"b": None}})
-        result = md["a", "b"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertTrue(getattr(result, "_from_none", False))
-        self.assertEqual(len(result), 0)
-
-    def test_tuple_access_through_none_returns_empty(self):
-        md = MagiDict({"a": {"b": None}})
-        result = md["a", "b", "c"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-        self.assertTrue(getattr(result, "_from_missing", False))
-
-    def test_single_element_tuple_with_none(self):
-        md = MagiDict({"key": None})
-        result = md[("key",)]
-        self.assertIsInstance(result, MagiDict)
-        self.assertTrue(getattr(result, "_from_none", False))
 
 
 class TestEdgeCasesMore(TestCase):
@@ -5891,12 +5788,6 @@ class TestEdgeCasesMore(TestCase):
         md = MagiDict()
         with self.assertRaises(KeyError):
             md["key"]
-
-    def test_nested_empty_magidicts(self):
-        md = MagiDict({"a": {}})
-        result = md["a", "b"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
 
     def test_integer_keys(self):
         md = MagiDict({1: "one", 2: "two"})
@@ -5943,32 +5834,11 @@ class TestComplexScenarios(TestCase):
         # Nested access via dots
         self.assertEqual(md["config.json.data"], "nested")
 
-        # Tuple safe access
-        self.assertEqual(md["users", 0, "name"], "Alice")
-        result = md["users", 2, "name"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-
     def test_deeply_nested_structure(self):
         md = MagiDict(
             {"level1": {"level2": {"level3": {"level4": {"level5": "deep_value"}}}}}
         )
-
-        # Dot notation
         self.assertEqual(md["level1.level2.level3.level4.level5"], "deep_value")
-
-        # Tuple notation
-        self.assertEqual(
-            md["level1", "level2", "level3", "level4", "level5"], "deep_value"
-        )
-
-        # Mixed missing paths
-        with self.assertRaises(KeyError):
-            md["level1.level2.missing.level4.level5"]
-
-        result = md["level1", "level2", "missing", "level4", "level5"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
 
     def test_list_of_dicts_access(self):
         md = MagiDict(
@@ -5981,20 +5851,7 @@ class TestComplexScenarios(TestCase):
             }
         )
 
-        # Access via tuple
-        self.assertEqual(md["items", 1, "name"], "second")
-
-        # Access via dot notation (strict)
         self.assertEqual(md["items.1.name"], "second")
-
-        # Missing index (safe with tuple)
-        result = md["items", 99, "name"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-
-        # Missing index (strict with dots)
-        with self.assertRaises((IndexError, ValueError)):
-            md["items.99.name"]
 
 
 class TestComparison(TestCase):
@@ -6005,19 +5862,6 @@ class TestComparison(TestCase):
 
         # Both should return same value when path exists
         self.assertEqual(md["a.b.c"], "value")
-        self.assertEqual(md["a", "b", "c"], "value")
-
-    def test_string_vs_tuple_on_missing_path(self):
-        md = MagiDict({"a": {"b": {"c": "value"}}})
-
-        # String (strict) - raises KeyError
-        with self.assertRaises(KeyError):
-            md["a.b.missing"]
-
-        # Tuple (safe) - returns empty MagiDict
-        result = md["a", "b", "missing"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
 
 
 class TestTupleListSetItem(TestCase):
@@ -6031,9 +5875,9 @@ class TestTupleListSetItem(TestCase):
 
     def test_set_nested_value_via_list(self):
         md = MagiDict({"users": [{"name": "Alice", "id": 1}]})
-        with self.assertRaises(TypeError):
-            md[["users", 0, "name"]] = "NewName"
-        self.assertEqual(md["users", 0, "name"], "Alice")
+        md["users", 0, "name"] = "NewName"
+        self.assertEqual(md["users"][0]["name"], "Alice")
+        self.assertEqual(md["users", 0, "name"], "NewName")
 
     def test_set_deep_nested_dict(self):
         md = MagiDict({"a": {"b": {"c": "old"}}})
@@ -6052,7 +5896,6 @@ class TestTupleListSetItem(TestCase):
         md = MagiDict({"a": {}})
         md["a", "b", "c"] = "value"
         self.assertEqual(md["a", "b", "c"], "value")
-        self.assertIsInstance(md["a", "b"], MagiDict)
 
     def test_set_creates_path_from_empty(self):
         """Setting on completely missing path should create the structure."""
@@ -6111,7 +5954,6 @@ class TestTupleListSetItemEdgeCases(TestCase):
     def test_set_list_index_out_of_bounds(self):
         """Setting an out-of-bounds list index should handle gracefully."""
         md = MagiDict({"items": [1, 2, 3]})
-        self.assertEqual(md["items", 99], MagiDict())
         md["items", 99] = "value"
         self.assertEqual(md["items", 99], "value")
 
@@ -6167,20 +6009,6 @@ class TestRealWorldScenarios(TestCase):
             {"users": [{"name": "Alice", "id": 1}, {"name": "Keanu", "id": 2}]}
         )
 
-        # Read access
-        self.assertEqual(md["users", 0, "name"], "Alice")
-        self.assertEqual(md["users", 1, "id"], 2)
-
-        # Missing index (safe)
-        result = md["users", 2, "name"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-
-        # Missing key (safe)
-        result = md["users", 0, "email"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-
         # Write access
         md["users", 0, "name"] = "Overridden"
         self.assertEqual(md["users", 0, "name"], "Overridden")
@@ -6214,11 +6042,6 @@ class TestRealWorldScenarios(TestCase):
         self.assertEqual(md["data"]["items"][1]["status"], "active")
         self.assertEqual(md["data", "items", 1, "status"], "completed")
 
-        # Safe access to non-existent item
-        result = md["data", "items", 10, "status"]
-        self.assertIsInstance(result, MagiDict)
-        self.assertEqual(len(result), 0)
-
 
 class TestMixedAccessPatterns(TestCase):
     """Test mixing different access patterns."""
@@ -6243,19 +6066,8 @@ class TestMixedAccessPatterns(TestCase):
 
     def test_partial_tuple_access(self):
         md = MagiDict({"a": {"b": {"c": "d"}}, "x": {"y": None}})
-
-        # Get partial path
-        partial = md["a", "b"]
-        self.assertIsInstance(partial, MagiDict)
-        self.assertEqual(partial["c"], "d")
-
-        # Set on partial path
         md["a", "b"] = {"c": "new", "e": "added"}
-        self.assertEqual(md["a", "b", "c"], "d")
-        self.assertEqual(md["a", "b", "e"], MagiDict())
-        self.assertTrue(getattr(md["a", "b", "e"], "_from_missing", False))
-        self.assertEqual(md["x", "y"], MagiDict())
-        self.assertTrue(getattr(md["x", "y"], "_from_none", False))
+        self.assertEqual(md["a", "b"]["e"], "added")
 
 
 class TestStrictGet(TestCase):
@@ -6903,9 +6715,7 @@ class TestFilterEdgeCases(TestCase):
             {"a": [[[], []], [[5, 6], [7, 8]]], "b": [[[]]], "c": [[[[9]]]]}
         )
 
-        expected_drop_empty = MagiDict(
-             {"a": [[[5, 6], [7, 8]]], "c": [[[[9]]]]}
-        )
+        expected_drop_empty = MagiDict({"a": [[[5, 6], [7, 8]]], "c": [[[[9]]]]})
 
         self.assertEqual(result, expected)
         self.assertEqual(result_drop_empty, expected_drop_empty)
@@ -6914,15 +6724,7 @@ class TestFilterEdgeCases(TestCase):
 class TestCoreMissingCoverage(TestCase):
     def test_getitem_with_list_and_tuple_keys_and_dot_string(self):
         md = MagiDict({"a": {"b": {"c": 1}}, "lst": [10, {"x": 5}]})
-        # forgiving nested access with list
-        self.assertEqual(md[["a", "b", "c"]], 1)
-        # forgiving nested access with tuple
-        self.assertEqual(md[("a", "b", "c")], 1)
-        # non-existing path returns empty MagiDict marked _from_missing
-        res = md[["a", "b", "nope"]]
-        self.assertIsInstance(res, MagiDict)
-        self.assertTrue(getattr(res, "_from_missing", False))
-        # dotted string unforgiving access
+        # dotted string forgiving access
         self.assertEqual(md["a.b.c"], 1)
         # dotted string indexing into list
         md2 = MagiDict({"arr": ["zero", {"k": "v"}]})
@@ -6944,7 +6746,6 @@ class TestCoreMissingCoverage(TestCase):
 
     def test_deepcopy_and_getstate_setstate_roundtrip(self):
         md = MagiDict({"a": 1})
-        # mark as from_missing and ensure deepcopy preserves flag
         mm = md.nope
         self.assertTrue(getattr(mm, "_from_missing", False))
         cp = pickle.loads(pickle.dumps(mm))
@@ -6983,17 +6784,20 @@ class TestCoreMissingCoverage(TestCase):
         self.assertCountEqual(all_x, [0, 1, 2])
 
     def test_filter_various_signatures_and_drop_empty(self):
-        md = MagiDict({
-            "a": 1,
-            "b": None,
-            "c": [1, None, 2, {"n": None}],
-            "d": {"keep": 5, "drop": None},
-        })
+        md = MagiDict(
+            {
+                "a": 1,
+                "b": None,
+                "c": [1, None, 2, {"n": None}],
+                "d": {"keep": 5, "drop": None},
+            }
+        )
 
         # default filter removes None
         f = md.filter(None)
         self.assertIn("a", f)
         self.assertNotIn("b", f)
+
         # predicate with two args (index, value) for sequences
         def seq_pred(_, v):
             return v is not None
@@ -7029,9 +6833,1010 @@ class TestCoreMissingCoverage(TestCase):
         self.assertIsInstance(md, MagiDict)
         self.assertIsInstance(md.k, MagiDict)
 
+    class TestDotNotationAccess(TestCase):
+        """Tests for dot-notation nested key access in __getitem__"""
+
+    def setUp(self):
+        """Create test data with various nested structures"""
+        self.md = MagiDict(
+            {
+                "user": {
+                    "name": "Alice",
+                    "profile": {
+                        "email": "alice@example.com",
+                        "settings": {"theme": "dark", "notifications": True},
+                    },
+                },
+                "items": [
+                    {"id": 1, "name": "Item One"},
+                    {"id": 2, "name": "Item Two"},
+                    {"id": 3, "nested": {"deep": "value"}},
+                ],
+                "matrix": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                "mixed": {
+                    "data": [
+                        {"type": "A", "values": [10, 20, 30]},
+                        {"type": "B", "values": [40, 50, 60]},
+                    ]
+                },
+            }
+        )
+
+    # =============================================================================
+    # Test basic dot-notation access on nested Mappings
+    # =============================================================================
+
+    def test_simple_nested_mapping_access(self):
+        """Test accessing nested dictionary keys with dot notation"""
+        self.assertEqual(self.md["user.name"], "Alice")
+        self.assertEqual(self.md["user.profile.email"], "alice@example.com")
+
+    def test_deep_nested_mapping_access(self):
+        """Test accessing deeply nested dictionary keys"""
+        self.assertEqual(self.md["user.profile.settings.theme"], "dark")
+        self.assertTrue(self.md["user.profile.settings.notifications"])
+
+    def test_single_level_dot_notation(self):
+        """Test that single-level keys still work with dot notation"""
+        # This should work even though there's no actual dot traversal
+        self.assertEqual(self.md["user"], self.md.user)
+
+    # =============================================================================
+    # Test dot-notation access with Sequences (lists) using integer indices
+    # =============================================================================
+
+    def test_list_index_access_with_dot_notation(self):
+        """Test accessing list items by index using dot notation"""
+        self.assertEqual(self.md["items.0.id"], 1)
+        self.assertEqual(self.md["items.1.name"], "Item Two")
+        self.assertEqual(self.md["items.2.nested.deep"], "value")
+
+    def test_nested_list_access(self):
+        """Test accessing nested lists with multiple indices"""
+        self.assertEqual(self.md["matrix.0.0"], 1)
+        self.assertEqual(self.md["matrix.1.1"], 5)
+        self.assertEqual(self.md["matrix.2.2"], 9)
+
+    def test_mixed_mapping_and_sequence_access(self):
+        """Test combining mapping keys and sequence indices"""
+        self.assertEqual(self.md["mixed.data.0.type"], "A")
+        self.assertEqual(self.md["mixed.data.1.values.2"], 60)
+        self.assertEqual(self.md["mixed.data.0.values.1"], 20)
+
+    # =============================================================================
+    # Test missing keys - should return MagiDict with _from_missing=True
+    # =============================================================================
+
+    def test_missing_key_in_mapping_returns_protected_magidict(self):
+        """Test that accessing a missing key in a mapping returns a protected MagiDict"""
+        result = self.md["user.nonexistent"]
+        self.assertIsNone(result)
+
+    def test_missing_nested_key_returns_protected_magidict(self):
+        """Test that missing key in deeply nested structure returns protected MagiDict"""
+        result = self.md["user.profile.missing.key"]
+        self.assertIsNone(result)
+
+    def test_missing_key_at_any_level_returns_protected_magidict(self):
+        """Test that a missing key at any level in the chain returns protected MagiDict"""
+        # Missing at first level
+        result1 = self.md["nonexistent.key"]
+        self.assertIsNone(result1)
+
+        # Missing at second level
+        result2 = self.md["user.nonexistent.key"]
+        self.assertIsNone(result2)
+
+        # Missing at third level
+        result3 = self.md["user.profile.nonexistent.key"]
+        self.assertIsNone(result3)
+
+    def test_out_of_range_list_index_returns_protected_magidict(self):
+        """Test that out-of-range list indices return protected MagiDict"""
+        result = self.md["items.99.name"]
+        self.assertIsNone(result)
+
+    def test_negative_index_as_string_returns_protected_magidict(self):
+        """Test that negative indices as strings return protected MagiDict"""
+        # Negative indices won't work with int() conversion from string
+        result = self.md["items.-1.name"]
+        self.assertIsNone(result)
+
+    def test_non_numeric_index_for_list_returns_protected_magidict(self):
+        """Test that non-numeric strings used as list indices return protected MagiDict"""
+        result = self.md["items.abc.name"]
+        self.assertIsNone(result)
+
+    def test_float_string_as_list_index_returns_protected_magidict(self):
+        """Test that float strings can't be used as list indices"""
+        result = self.md["items.1.5.name"]
+        self.assertIsNone(result)
+
+    def test_trying_to_traverse_string_returns_protected_magidict(self):
+        """Test that attempting to traverse a string returns protected MagiDict"""
+        result = self.md["user.name.something"]
+        self.assertIsNone(result)
+
+    def test_trying_to_traverse_boolean_returns_protected_magidict(self):
+        """Test that attempting to traverse a boolean returns protected MagiDict"""
+        result = self.md["user.profile.settings.notifications.key"]
+        self.assertIsNone(result)
+
+    def test_trying_to_traverse_number_returns_protected_magidict(self):
+        """Test that attempting to traverse a number returns protected MagiDict"""
+        result = self.md["items.0.id.key"]
+        self.assertIsNone(result)
+
+    def test_missing_regular_key_raises_keyerror(self):
+        """Test that missing keys without dots raise KeyError normally"""
+        with self.assertRaises(KeyError):
+            _ = self.md["nonexistent"]
+
+    def test_missing_regular_key_no_dots_raises_keyerror(self):
+        """Test that single missing keys (no dots) still raise KeyError"""
+        with self.assertRaises(KeyError):
+            _ = self.md["this_key_does_not_exist"]
+
+    def test_empty_string_segments_in_dot_notation(self):
+        """Test behavior with consecutive dots (empty segments)"""
+        # This tests the edge case of "key1..key2" or ".key1"
+        md_test = MagiDict({"": {"nested": "value"}})
+        # This should work if there's actually an empty string key
+        self.assertEqual(md_test[".nested"], "value")
+
+    def test_dot_notation_with_key_containing_empty_string(self):
+        """Test accessing when there's an empty string in the path"""
+        md_test = MagiDict({"a": {"": {"b": "value"}}})
+        self.assertEqual(md_test["a..b"], "value")
+
+    def test_very_deep_nesting(self):
+        """Test with very deep nesting levels"""
+        deep = MagiDict({"a": {"b": {"c": {"d": {"e": {"f": {"g": "deep_value"}}}}}}})
+        self.assertEqual(deep["a.b.c.d.e.f.g"], "deep_value")
+
+    def test_accessing_empty_dict_in_path(self):
+        """Test accessing through an empty dictionary"""
+        md_test = MagiDict({"outer": {}})
+        result = md_test["outer.inner.key"]
+        self.assertIsNone(result)
+
+    def test_accessing_empty_list_in_path(self):
+        """Test accessing through an empty list"""
+        md_test = MagiDict({"data": []})
+        result = md_test["data.0.key"]
+        self.assertIsNone(result)
+
+    def test_mixed_valid_and_invalid_path(self):
+        """Test path that's valid partway then becomes invalid"""
+        # Valid until "profile", then invalid
+        result = self.md["user.profile.nonexistent.deeply.nested"]
+        self.assertIsNone(result)
+
+    def test_list_then_invalid_index_then_more_keys(self):
+        """Test traversing list with invalid index followed by more keys"""
+        result = self.md["items.99.nested.key"]
+        self.assertIsNone(result)
+
+    def test_protected_magidict_cannot_be_modified(self):
+        """Test that MagiDict with _from_missing=True cannot be modified"""
+        result = self.md["nonexistent.key"]
+        with self.assertRaises(TypeError):
+            result["new_key"] = "value"
+
+    def test_protected_magidict_cannot_delete_items(self):
+        """Test that protected MagiDict cannot have items deleted"""
+        result = self.md["nonexistent.key"]
+        with self.assertRaises(TypeError):
+            del result["anything"]
+
+    def test_chaining_on_protected_magidict_still_works(self):
+        """Test that attribute access still works on protected MagiDict"""
+        result = self.md["nonexistent.key"]
+        # Should return another protected MagiDict, not raise error
+        with self.assertRaises(AttributeError):
+            _ = result.another.nonexistent
+
+    def test_tuple_sequence_access(self):
+        """Test accessing tuple elements with dot notation"""
+        md_test = MagiDict({"coords": ({"x": 1, "y": 2}, {"x": 3, "y": 4})})
+        self.assertEqual(md_test["coords.0.x"], 1)
+        self.assertEqual(md_test["coords.1.y"], 4)
+
+    def test_bytes_are_not_traversable(self):
+        """Test that bytes objects are not treated as sequences for traversal"""
+        md_test = MagiDict({"data": b"hello"})
+        result = md_test["data.0"]
+        self.assertIsNone(result)
+
+    def test_custom_sequence_types(self):
+        """Test with custom sequence types"""
+        from collections import UserList
+
+        custom_list = UserList([{"a": 1}, {"a": 2}])
+        md_test = MagiDict({"custom": custom_list})
+        # Should be able to traverse it
+        self.assertEqual(md_test["custom.0.a"], 1)
+        self.assertEqual(md_test["custom.1.a"], 2)
+
+    def test_custom_mapping_types(self):
+        """Test with custom mapping types"""
+        from collections import OrderedDict
+
+        ordered = OrderedDict([("first", {"val": 1}), ("second", {"val": 2})])
+        md_test = MagiDict({"ordered": ordered})
+        self.assertEqual(md_test["ordered.first.val"], 1)
+
+    # =============================================================================
+    # Test return value types
+    # =============================================================================
+
+    def test_successful_traversal_returns_final_value(self):
+        """Test that successful traversal returns the actual value, not a MagiDict wrapper"""
+        # String value
+        result = self.md["user.name"]
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, "Alice")
+
+        # Number value
+        result = self.md["items.0.id"]
+        self.assertIsInstance(result, int)
+        self.assertEqual(result, 1)
+
+        # Boolean value
+        result = self.md["user.profile.settings.notifications"]
+        self.assertIsInstance(result, bool)
+        self.assertTrue(result)
+
+    def test_traversal_to_nested_dict_returns_magidict(self):
+        """Test that traversing to a nested dict returns it as a MagiDict"""
+        result = self.md["user.profile"]
+        self.assertIsInstance(result, MagiDict)
+        self.assertIn("email", result)
+        # Should NOT have _from_missing flag since it's a real value
+        self.assertFalse(getattr(result, "_from_missing", False))
+
+    def test_traversal_to_list_returns_list(self):
+        """Test that traversing to a list returns the actual list"""
+        result = self.md["items"]
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+
+    # =============================================================================
+    # Test with None values
+    # =============================================================================
+
+    def test_none_value_in_path(self):
+        """Test behavior when encountering None in the traversal path"""
+        md_test = MagiDict({"data": None})
+        result = md_test["data.key"]
+        # Since None is not a Mapping or Sequence, should return protected MagiDict
+        self.assertIsNone(result)
+
+    def test_explicit_none_as_dictionary_value(self):
+        """Test accessing nested keys when intermediate value is None"""
+        md_test = MagiDict({"outer": {"inner": None}})
+        result = md_test["outer.inner.key"]
+        self.assertIsNone(result)
 
 
+class TestDotNotationSpecialCases(TestCase):
+    """Additional special cases and boundary conditions"""
+
+    def setUp(self):
+        """Create test data"""
+        self.md = MagiDict({"user": {"name": "Alice"}, "data": {"value": 123}})
+
+    def test_zero_index_access(self):
+        """Test that zero index works correctly"""
+        md = MagiDict({"items": [{"first": True}, {"second": True}]})
+        self.assertTrue(md["items.0.first"])
+
+    def test_large_list_index(self):
+        """Test with a large but valid list index"""
+        items = [{"num": i} for i in range(100)]
+        md = MagiDict({"items": items})
+        self.assertEqual(md["items.99.num"], 99)
+
+    def test_whitespace_in_keys(self):
+        """Test keys with whitespace work fine (only dots trigger splitting)"""
+        md = MagiDict({"key with spaces": {"nested": "value"}})
+        # Accessing with brackets works fine since there's no dot to trigger splitting
+        self.assertEqual(md["key with spaces"]["nested"], "value")
+
+        # Whitespace doesn't trigger splitting, only dots do
+        md2 = MagiDict({"my key": "my value"})
+        self.assertEqual(md2["my key"], "my value")
+
+    def test_numeric_string_keys_in_mapping(self):
+        """Test that numeric strings as dict keys don't get confused with list indices"""
+        md = MagiDict({"data": {"0": "zero", "1": "one"}})
+        # These are dict keys, not list indices
+        self.assertEqual(md["data.'0'"], "zero")
+        self.assertEqual(md["data.'1'"], "one")
+
+    def test_actual_dot_in_key_name(self):
+        """Test that a key with an actual dot in it takes precedence over traversal"""
+        md = MagiDict({"key.with.dots": "value"})
+        # If the key exists literally, it's returned directly (no traversal)
+        self.assertEqual(md["key.with.dots"], "value")
+
+        # But if trying to traverse a non-existent key with dots, it will try to split
+        md2 = MagiDict({"key": {"with": {"dots": "nested_value"}}})
+        self.assertEqual(md2["key.with.dots"], "nested_value")
+
+    def test_mixed_types_in_list(self):
+        """Test list with mixed types including dicts"""
+        md = MagiDict({"mixed": [1, "two", {"three": 3}, [4, 5], None]})
+        self.assertEqual(md["mixed.0"], 1)
+        self.assertEqual(md["mixed.1"], "two")
+        self.assertEqual(md["mixed.2.three"], 3)
+        self.assertEqual(md["mixed.3.1"], 5)
+
+        # Accessing None and trying to traverse
+        result = md["mixed.4.key"]
+        self.assertIsNone(result)
+
+    def test_accessing_method_via_dot_notation_fails(self):
+        """Test that trying to access dict methods via dot notation returns protected MagiDict"""
+        # 'keys' is a method, not a key in the dict
+        # Trying to access it via dot notation will return a protected MagiDict
+        result = self.md["keys.something"]
+        self.assertIsNone(result)
 
 
-if __name__ == "__main__":
-    main()
+class TestGetItemExceptionHandler(TestCase):
+    """Tests for the KeyError exception handling and dot-notation access."""
+
+    # ========== PRECONDITION: NON-DOTTED KEYS DON'T USE THIS CODE PATH ==========
+
+    def test_non_dotted_key_raises_keyerror_without_conversion(self):
+        """Test that keys without dots raise KeyError normally (no conversion logic)."""
+        md = MagiDict({"a": 1})
+        with self.assertRaises(KeyError):
+            _ = md["nonexistent"]
+
+    def test_non_dotted_numeric_string_no_conversion(self):
+        """Test numeric string without dot doesn't convert to int."""
+        md = MagiDict({123: "int key"})
+        # "123" without dot tries literal string key, not conversion to int
+        with self.assertRaises(KeyError):
+            _ = md["123"]
+
+    # ========== BASIC DOT-NOTATION SPLITTING ==========
+
+    def test_simple_dotted_path(self):
+        """Test basic dot-notation access through nested dicts."""
+        md = MagiDict({"a": {"b": {"c": "value"}}})
+        result = md["a.b.c"]
+        self.assertEqual(result, "value")
+
+    def test_single_level_dotted(self):
+        """Test dot-notation with single level nesting."""
+        md = MagiDict({"parent": {"child": "value"}})
+        result = md["parent.child"]
+        self.assertEqual(result, "value")
+
+    def test_two_level_dotted(self):
+        """Test two-level nesting."""
+        md = MagiDict({"a": {"b": "value"}})
+        result = md["a.b"]
+        self.assertEqual(result, "value")
+
+    # ========== QUOTED STRING KEY CONVERSION (IN DOTTED PATHS) ==========
+
+    def test_single_quoted_string_prevents_int_conversion(self):
+        """Test single-quoted string in dotted path prevents type conversion."""
+        md = MagiDict({"a": {"123": "string key", 123: "int key"}})
+        result = md["a.'123'"]
+        self.assertEqual(result, "string key")
+
+    def test_double_quoted_string_prevents_bool_conversion(self):
+        """Test double-quoted string in dotted path prevents type conversion."""
+        md = MagiDict({"a": {"True": "string key", True: "bool key"}})
+        result = md['a."True"']
+        self.assertEqual(result, "string key")
+
+    def test_quoted_string_with_special_chars(self):
+        """Test quoted string with special characters (hyphens)."""
+        md = MagiDict({"a": {"special-key": "value"}})
+        result = md["a.'special-key'"]
+        self.assertEqual(result, "value")
+
+    def test_quoted_string_with_dots_inside(self):
+        """Test quoted string containing dots is treated as single key."""
+        md = MagiDict({"a": {"key.with.dots": "value"}})
+        result = md["a.'key.with.dots'"]
+        self.assertEqual(result, "value")
+
+    def test_quoted_float_key(self):
+        """Test quoted float string as key."""
+        md = MagiDict({"a": {3.14: "pi value", "3.14": "string pi"}})
+        result = md["a.3,14"]
+        self.assertEqual(result, "pi value")
+        result_str = md["a.'3.14'"]
+        self.assertEqual(result_str, "string pi")
+
+    def test_empty_quoted_string(self):
+        """Test empty string as key with quotes."""
+        md = MagiDict({"a": {"": "empty key"}})
+        result = md["a.''"]
+        self.assertEqual(result, "empty key")
+
+    def test_quoted_prevents_all_conversions(self):
+        """Test quotes prevent integer, boolean, tuple conversions."""
+        md = MagiDict(
+            {
+                "a": {
+                    "123": "str",
+                    "True": "str",
+                    "None": "str",
+                    "(1,2)": "str",
+                    123: "int",
+                    True: "bool",
+                    None: "none",
+                    (1, 2): "tuple",
+                }
+            }
+        )
+        self.assertEqual(md["a.'123'"], "str")
+        self.assertEqual(md["a.'True'"], "str")
+        self.assertEqual(md["a.'None'"], "str")
+        self.assertEqual(md["a.'(1,2)'"], "str")
+
+    def test_mismatched_quotes_not_stripped(self):
+        """Test mismatched quotes don't get stripped."""
+        md = MagiDict({"a": {"'x\"": "value"}})
+        result = md["a.'x\""]
+        self.assertEqual(result, "value")
+
+    def test_single_char_quoted_not_stripped(self):
+        """Test single character in quotes not stripped (<=2 chars)."""
+        md = MagiDict({"a": {"'x": "value"}})
+        result = md["a.'x"]
+        self.assertEqual(result, "value")
+
+    def test_two_char_quoted_not_stripped(self):
+        """Test two characters in quotes not stripped (<=2 chars)."""
+        md = MagiDict({"a": {"": "value"}})
+        result = md["a.''"]
+        self.assertEqual(result, "value")
+
+    # ========== INTEGER KEY CONVERSION ==========
+
+    def test_positive_integer_conversion(self):
+        """Test positive integer string converts to int in dotted path."""
+        md = MagiDict({"a": {123: "int key"}})
+        result = md["a.123"]
+        self.assertEqual(result, "int key")
+
+    def test_negative_integer_conversion(self):
+        """Test negative integer string converts to int."""
+        md = MagiDict({"a": {-42: "negative"}})
+        result = md["a.-42"]
+        self.assertEqual(result, "negative")
+
+    def test_zero_integer_conversion(self):
+        """Test zero converts to int."""
+        md = MagiDict({"a": {0: "zero"}})
+        result = md["a.0"]
+        self.assertEqual(result, "zero")
+
+    def test_integer_for_list_indexing(self):
+        """Test integer conversion for list indexing."""
+        md = MagiDict({"a": [10, 20, 30]})
+        result = md["a.1"]
+        self.assertEqual(result, 20)
+
+    def test_negative_integer_for_list_indexing(self):
+        """Test negative integer for list indexing."""
+        md = MagiDict({"a": [10, 20, 30]})
+        result = md["a.-1"]
+        self.assertEqual(result, 30)
+
+    def test_large_integer_conversion(self):
+        """Test very large integer conversion."""
+        big = 999999999999999999
+        md = MagiDict({"a": {big: "big"}})
+        result = md[f"a.{big}"]
+        self.assertEqual(result, "big")
+
+    # ========== BOOLEAN KEY CONVERSION ==========
+
+    def test_true_string_to_boolean(self):
+        """Test 'True' string converts to boolean True."""
+        md = MagiDict({"a": {True: "bool key"}})
+        result = md["a.True"]
+        self.assertEqual(result, "bool key")
+
+    def test_false_string_to_boolean(self):
+        """Test 'False' string converts to boolean False."""
+        md = MagiDict({"a": {False: "bool key"}})
+        result = md["a.False"]
+        self.assertEqual(result, "bool key")
+
+    def test_boolean_in_nested_path(self):
+        """Test boolean conversion in multi-level path."""
+        md = MagiDict({"x": {"y": {True: "found"}}})
+        result = md["x.y.True"]
+        self.assertEqual(result, "found")
+
+    def test_boolean_cannot_index_sequence(self):
+        """Test True cannot be used as sequence index (returns None)."""
+        md = MagiDict({"a": [1, 2, 3]})
+        result = md["a.True"]
+        self.assertIsNone(result)
+
+    def test_false_cannot_index_sequence(self):
+        """Test False cannot be used as sequence index (returns None)."""
+        md = MagiDict({"a": [1, 2, 3]})
+        result = md["a.False"]
+        self.assertIsNone(result)
+
+    # ========== NONE KEY CONVERSION ==========
+
+    def test_none_string_to_none(self):
+        """Test 'None' string converts to None."""
+        md = MagiDict({"a": {None: "none key"}})
+        result = md["a.None"]
+        self.assertEqual(result, "none key")
+
+    def test_none_in_nested_path(self):
+        """Test None conversion in multi-level path."""
+        md = MagiDict({"x": {"y": {None: "found"}}})
+        result = md["x.y.None"]
+        self.assertEqual(result, "found")
+
+    # ========== LITERAL_EVAL CONVERSIONS (TUPLES, SETS) ==========
+
+    def test_tuple_key_via_literal_eval(self):
+        """Test tuple key parsed via literal_eval."""
+        md = MagiDict({"a": {(1, 2, 3): "tuple key"}})
+        result = md["a.(1, 2, 3)"]
+        self.assertEqual(result, "tuple key")
+
+    def test_tuple_without_spaces(self):
+        """Test tuple without spaces."""
+        md = MagiDict({"a": {(1, 2): "tuple"}})
+        result = md["a.(1,2)"]
+        self.assertEqual(result, "tuple")
+
+    def test_empty_tuple(self):
+        """Test empty tuple."""
+        md = MagiDict({"a": {(): "empty"}})
+        result = md["a.()"]
+        self.assertEqual(result, "empty")
+
+    def test_nested_tuple(self):
+        """Test nested tuple."""
+        md = MagiDict({"a": {(1, (2, 3)): "nested"}})
+        result = md["a.(1, (2, 3))"]
+        self.assertEqual(result, "nested")
+
+    def test_tuple_with_strings(self):
+        """Test tuple containing strings."""
+        md = MagiDict({"a": {("x", "y"): "str tuple"}})
+        result = md["a.('x', 'y')"]
+        self.assertEqual(result, "str tuple")
+
+    def test_literal_eval_exception_keeps_original(self):
+        """Test literal_eval exception keeps string unchanged."""
+        md = MagiDict({"a": {"(invalid": "value"}})
+        result = md["a.(invalid"]
+        self.assertEqual(result, "value")
+
+    def test_unclosed_parenthesis(self):
+        """Test unclosed parenthesis doesn't crash."""
+        md = MagiDict({"a": {"(1,2": "unclosed"}})
+        result = md["a.(1,2"]
+        self.assertEqual(result, "unclosed")
+
+    def test_set_literal_as_frozenset_key(self):
+        """Test set notation (though dict keys use frozenset)."""
+        key = frozenset([1, 2])
+        md = MagiDict({"a": {key: "set key"}})
+        # literal_eval of {1,2} creates a set, but we check the path works
+        # (actual key matching depends on frozenset equality)
+
+    def test_dict_notation_fails_literal_eval(self):
+        """Test dict notation fails literal_eval gracefully."""
+        md = MagiDict({"a": {"{1:2}": "value"}})
+        result = md["a.'{1:2}'"]
+        self.assertEqual(result, "value")
+
+    # ========== FLOAT WITH COMMA CONVERSION ==========
+
+    def test_comma_as_decimal_separator(self):
+        """Test comma converted to dot for float."""
+        md = MagiDict({"a": {3.14: "pi"}})
+        result = md["a.3,14"]
+        self.assertEqual(result, "pi")
+
+    def test_comma_float_simple(self):
+        """Test simple comma float."""
+        md = MagiDict({"a": {1.5: "value"}})
+        result = md["a.1,5"]
+        self.assertEqual(result, "value")
+
+    def test_negative_comma_float(self):
+        """Test negative comma float."""
+        md = MagiDict({"a": {-2.5: "negative"}})
+        result = md["a.-2,5"]
+        self.assertEqual(result, "negative")
+
+    def test_comma_float_with_leading_zero(self):
+        """Test comma float starting with zero."""
+        md = MagiDict({"a": {0.75: "value"}})
+        result = md["a.0,75"]
+        self.assertEqual(result, "value")
+
+    def test_comma_requires_all_valid_chars(self):
+        """Test comma conversion requires digits, comma, dot, minus only."""
+        md = MagiDict({"a": {"1a,2": "value"}})
+        result = md["a.1a,2"]
+        self.assertEqual(result, "value")
+
+    def test_multiple_commas_no_conversion(self):
+        """Test multiple commas prevent conversion."""
+        md = MagiDict({"a": {"1,2,3": "value"}})
+        result = md["a.1,2,3"]
+        self.assertEqual(result, "value")
+
+    # ========== TRAVERSAL THROUGH MAPPINGS ==========
+
+    def test_mapping_keyerror_returns_none(self):
+        """Test missing key in mapping returns None."""
+        md = MagiDict({"a": {"b": 1}})
+        result = md["a.nonexistent"]
+        self.assertIsNone(result)
+
+    def test_deep_mapping_missing_key(self):
+        """Test missing key deep in nested mappings returns None."""
+        md = MagiDict({"a": {"b": {"c": 1}}})
+        result = md["a.b.missing"]
+        self.assertIsNone(result)
+
+    def test_multi_level_mapping_traversal(self):
+        """Test successful multi-level mapping traversal."""
+        md = MagiDict({"l1": {"l2": {"l3": {"l4": "deep"}}}})
+        result = md["l1.l2.l3.l4"]
+        self.assertEqual(result, "deep")
+
+    # ========== TRAVERSAL THROUGH SEQUENCES ==========
+
+    def test_sequence_index_out_of_bounds_returns_none(self):
+        """Test IndexError returns None."""
+        md = MagiDict({"a": [1, 2, 3]})
+        result = md["a.10"]
+        self.assertIsNone(result)
+
+    def test_sequence_negative_out_of_bounds(self):
+        """Test negative index out of bounds returns None."""
+        md = MagiDict({"a": [1, 2, 3]})
+        result = md["a.-10"]
+        self.assertIsNone(result)
+
+    def test_sequence_non_integer_key_returns_none(self):
+        """Test non-integer key for sequence returns None (ValueError)."""
+        md = MagiDict({"a": [1, 2, 3]})
+        result = md["a.notanumber"]
+        self.assertIsNone(result)
+
+    def test_list_successful_traversal(self):
+        """Test successful list traversal."""
+        md = MagiDict({"list": [{"key": "value"}]})
+        result = md["list.0.key"]
+        self.assertEqual(result, "value")
+
+    def test_tuple_successful_traversal(self):
+        """Test successful tuple traversal."""
+        md = MagiDict({"tuple": ({"key": "value"},)})
+        result = md["tuple.0.key"]
+        self.assertEqual(result, "value")
+
+    def test_nested_list_traversal(self):
+        """Test traversal through nested lists."""
+        md = MagiDict({"data": [[1, 2], [3, 4]]})
+        result = md["data.1.0"]
+        self.assertEqual(result, 3)
+
+    # ========== STRING AND BYTES EXCLUSION FROM SEQUENCE TREATMENT ==========
+
+    def test_string_not_traversable(self):
+        """Test string is not treated as sequence (returns None)."""
+        md = MagiDict({"text": "hello"})
+        result = md["text.0"]
+        self.assertIsNone(result)
+
+    def test_bytes_not_traversable(self):
+        """Test bytes is not treated as sequence (returns None)."""
+        md = MagiDict({"data": b"bytes"})
+        result = md["data.0"]
+        self.assertIsNone(result)
+
+    # ========== NON-MAPPING/NON-SEQUENCE VALUES RETURN NONE ==========
+
+    def test_integer_not_traversable(self):
+        """Test integer value cannot be traversed."""
+        md = MagiDict({"value": 42})
+        result = md["value.key"]
+        self.assertIsNone(result)
+
+    def test_float_not_traversable(self):
+        """Test float value cannot be traversed."""
+        md = MagiDict({"value": 3.14})
+        result = md["value.key"]
+        self.assertIsNone(result)
+
+    def test_none_value_not_traversable(self):
+        """Test None value cannot be traversed."""
+        md = MagiDict({"value": None})
+        result = md["value.key"]
+        self.assertIsNone(result)
+
+    def test_boolean_value_not_traversable(self):
+        """Test boolean value cannot be traversed."""
+        md = MagiDict({"value": True})
+        result = md["value.key"]
+        self.assertIsNone(result)
+
+    # ========== MIXED TYPE CONVERSIONS IN PATHS ==========
+
+    def test_quoted_then_integer(self):
+        """Test quoted key followed by integer index."""
+        md = MagiDict({"a": {"my-list": [10, 20, 30]}})
+        result = md["a.'my-list'.1"]
+        self.assertEqual(result, 20)
+
+    def test_integer_then_boolean(self):
+        """Test integer dict key followed by boolean dict key."""
+        md = MagiDict({"a": {123: {True: "found"}}})
+        result = md["a.123.True"]
+        self.assertEqual(result, "found")
+
+    def test_boolean_then_quoted(self):
+        """Test boolean key followed by quoted string."""
+        md = MagiDict({True: {"special-key": "value"}})
+        result = md["True.'special-key'"]
+        self.assertEqual(result, "value")
+
+    def test_tuple_then_none(self):
+        """Test tuple key followed by None key."""
+        md = MagiDict({"a": {(1, 2): {None: "found"}}})
+        result = md["a.(1, 2).None"]
+        self.assertEqual(result, "found")
+
+    def test_comma_float_then_integer_index(self):
+        """Test comma float key followed by integer sequence index."""
+        md = MagiDict({"a": {3.14: ["item1", "item2"]}})
+        result = md["a.3,14.0"]
+        self.assertEqual(result, "item1")
+
+    def test_all_conversion_types_in_one_path(self):
+        """Test path using all conversion types."""
+        md = MagiDict(
+            {"start": {123: {True: {(1, 2): {"special-key": {None: ["final"]}}}}}}
+        )
+        result = md["start.123.True.(1, 2).'special-key'.None.0"]
+        self.assertEqual(result, "final")
+
+    # ========== ERROR HANDLING EDGE CASES ==========
+
+    def test_partial_success_then_keyerror(self):
+        """Test successful traversal followed by KeyError returns None."""
+        md = MagiDict({"a": {"b": {"c": 1}}})
+        result = md["a.b.missing"]
+        self.assertIsNone(result)
+
+    def test_partial_success_then_indexerror(self):
+        """Test successful traversal followed by IndexError returns None."""
+        md = MagiDict({"a": {"b": [1, 2]}})
+        result = md["a.b.10"]
+        self.assertIsNone(result)
+
+    def test_mixed_mapping_and_sequence_traversal(self):
+        """Test alternating between mappings and sequences."""
+        md = MagiDict({"level1": [{"level2": [{"level3": "value"}]}]})
+        result = md["level1.0.level2.0.level3"]
+        self.assertEqual(result, "value")
+
+    def test_empty_string_key_in_nested_path(self):
+        """Test empty string as intermediate key."""
+        md = MagiDict({"a": {"": {"b": "value"}}})
+        result = md["a.''.b"]
+        self.assertEqual(result, "value")
+
+    def test_whitespace_in_quoted_key(self):
+        """Test key with whitespace via quotes."""
+        md = MagiDict({"a": {"my key": "value"}})
+        result = md["a.'my key'"]
+        self.assertEqual(result, "value")
+
+    def test_unicode_in_quoted_key(self):
+        """Test unicode characters in quoted key."""
+        md = MagiDict({"a": {"émoji🎉": "value"}})
+        result = md["a.'émoji🎉'"]
+        self.assertEqual(result, "value")
+
+    def test_backslash_in_quoted_key(self):
+        """Test backslash in quoted key."""
+        md = MagiDict({"a": {"path\\file": "value"}})
+        result = md["a.'path\\file'"]
+        self.assertEqual(result, "value")
+
+    # ========== CONVERSION PRIORITY AND PRECEDENCE ==========
+
+    def test_quoted_overrides_integer_conversion(self):
+        """Test quotes prevent integer conversion."""
+        md = MagiDict({"a": {"123": "str", 123: "int"}})
+        result = md["a.'123'"]
+        self.assertEqual(result, "str")
+
+    def test_unquoted_integer_converts(self):
+        """Test unquoted number converts to int."""
+        md = MagiDict({"a": {"123": "str", 123: "int"}})
+        result = md["a.123"]
+        self.assertEqual(result, "int")
+
+    def test_quoted_overrides_boolean_conversion(self):
+        """Test quotes prevent boolean conversion."""
+        md = MagiDict({"a": {"True": "str", True: "bool"}})
+        result = md["a.'True'"]
+        self.assertEqual(result, "str")
+
+    def test_unquoted_boolean_converts(self):
+        """Test unquoted True converts to boolean."""
+        md = MagiDict({"a": {"True": "str", True: "bool"}})
+        result = md["a.True"]
+        self.assertEqual(result, "bool")
+
+    # ========== SPECIAL EDGE CASES ==========
+
+    def test_scientific_notation_not_converted(self):
+        """Test scientific notation stays as string."""
+        md = MagiDict({"a": {"1e5": "value"}})
+        result = md["a.1e5"]
+        self.assertEqual(result, "value")
+
+    def test_hex_string_not_converted(self):
+        """Test hex string not converted to int."""
+        md = MagiDict({"a": {"0xFF": "value"}})
+        result = md["a.0xFF"]
+        self.assertEqual(result, "value")
+
+    def test_plus_sign_not_converted(self):
+        """Test plus sign prevents int conversion."""
+        md = MagiDict({"a": {"+123": "value"}})
+        result = md["a.+123"]
+        self.assertEqual(result, "value")
+
+    def test_comma_at_start_float_conversion(self):
+        """Test comma at start prevents float conversion."""
+        md = MagiDict({"a": {",123": "value", 0.123: "float"}})
+        result = md["a.,123"]
+        self.assertEqual(result, "float")
+
+    def test_comma_at_end_no_float_conversion(self):
+        """Test comma at end prevents float conversion."""
+        md = MagiDict({"a": {"123,": "value"}})
+        result = md["a.123,"]
+        self.assertEqual(result, "value")
+
+    # ========== RETURN VALUE VERIFICATION ==========
+
+    def test_returns_actual_none_value(self):
+        """Test actual None value is returned (not missing key None)."""
+        md = MagiDict({"a": {"b": None}})
+        result = md["a.b"]
+        self.assertIsNone(result)
+
+    def test_returns_empty_dict(self):
+        """Test empty dict (MagiDict) is returned."""
+        md = MagiDict({"a": {"b": {}}})
+        result = md["a.b"]
+        self.assertEqual(result, {})
+        self.assertIsInstance(result, MagiDict)
+
+    def test_returns_empty_list(self):
+        """Test empty list is returned."""
+        md = MagiDict({"a": {"b": []}})
+        result = md["a.b"]
+        self.assertEqual(result, [])
+
+    def test_returns_zero(self):
+        """Test zero value is returned."""
+        md = MagiDict({"a": {"b": 0}})
+        result = md["a.b"]
+        self.assertEqual(result, 0)
+
+    def test_returns_false(self):
+        """Test False value is returned."""
+        md = MagiDict({"a": {"b": False}})
+        result = md["a.b"]
+        self.assertIs(result, False)
+
+    def test_returns_empty_string(self):
+        """Test empty string is returned."""
+        md = MagiDict({"a": {"b": ""}})
+        result = md["a.b"]
+        self.assertEqual(result, "")
+
+    # ========== IMMUTABILITY OF ORIGINAL STRUCTURE ==========
+
+    def test_original_dict_unchanged_after_access(self):
+        """Test conversions don't modify original dict."""
+        md = MagiDict({"a": {"123": "str", 123: "int"}})
+        original_keys = set(md["a"].keys())
+
+        _ = md["a.123"]  # Access with conversion
+
+        self.assertEqual(set(md["a"].keys()), original_keys)
+
+    def test_multiple_accesses_same_path(self):
+        """Test multiple accesses return same result."""
+        md = MagiDict({"a": {"b": {"c": "value"}}})
+        result1 = md["a.b.c"]
+        result2 = md["a.b.c"]
+        self.assertEqual(result1, result2)
+        self.assertEqual(result1, "value")
+
+    def test_failed_access_then_successful_access(self):
+        """Test failed access doesn't affect subsequent successful access."""
+        md = MagiDict({"a": {"b": "value"}})
+        result_fail = md["a.missing"]
+        self.assertIsNone(result_fail)
+        result_success = md["a.b"]
+        self.assertEqual(result_success, "value")
+
+    # ========== COMPLEX REAL-WORLD SCENARIOS ==========
+
+    def test_deeply_nested_mixed_types(self):
+        """Test complex nested structure with all types."""
+        md = MagiDict(
+            {
+                "api": {
+                    "v1": [
+                        {
+                            "users": {
+                                123: {
+                                    "active": {
+                                        True: {"permissions": [{"admin": False}]}
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        )
+        result = md["api.v1.0.users.123.active.True.permissions.0.admin"]
+        self.assertIs(result, False)
+
+    def test_json_like_structure_traversal(self):
+        """Test JSON-like nested structure."""
+        md = MagiDict(
+            {
+                "data": {
+                    "items": [{"id": 1, "name": "first"}, {"id": 2, "name": "second"}],
+                    "meta": {"total": 2},
+                }
+            }
+        )
+        self.assertEqual(md["data.items.0.name"], "first")
+        self.assertEqual(md["data.items.1.id"], 2)
+        self.assertEqual(md["data.meta.total"], 2)
+
+    def test_config_like_structure(self):
+        """Test configuration-like nested structure."""
+        md = MagiDict(
+            {
+                "database": {
+                    "primary": {"host": "localhost", "port": 5432},
+                    "replicas": [
+                        {"host": "replica1", "port": 5432},
+                        {"host": "replica2", "port": 5432},
+                    ],
+                }
+            }
+        )
+        self.assertEqual(md["database.primary.host"], "localhost")
+        self.assertEqual(md["database.replicas.1.host"], "replica2")

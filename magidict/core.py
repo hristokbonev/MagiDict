@@ -1,6 +1,7 @@
 """Core implementation of MagiDict, a recursive dictionary with safe attribute access
 and automatic conversion of nested dictionaries into MagiDicts."""
 
+from ast import literal_eval
 import json
 from copy import deepcopy
 from typing import Any, Iterable, List, Mapping, Sequence, Union
@@ -12,6 +13,7 @@ _MISSING = object()
 try:
     from ._magidict import fast_hook as _c_fast_hook
     from ._magidict import fast_hook_with_memo as _c_fast_hook_with_memo
+    from ._magidict import split_dotted as _c_split_dotted
 
     _has_c_hook = True
 except ImportError:
@@ -94,59 +96,124 @@ class MagiDict(dict):
     def __getitem__(self, keys: Union[Any, Iterable[Any]]) -> Any:
         """
         - Supports standard dict key access.
-        - Supports list/tuple of keys for nested forgiving access.
-        - Supporsts string keys with dots for nested unforgiving access.
+        - Supporsts string keys with dots for nested safe access.
+        - To explicitly indicate string keys, wrap them in quotes. Otherwise,
+          MagiDict will attempt to perform type conversion and literal evaluation.
+          For example 'key.0.True.(1,2)' will be interpreted as
+          ['key'][0][True][(1,2)] and 'key."0"."True"."(1,2)" will be interpreted as
+          ['key']['0']['True']['(1,2)'].
+        - Float keys are supported with commas only, e.g., 'key.3,14' -> ['key'][3.14]
+
+        Parameters:
+            keys: A single key or a dot-separated string representing nested keys.
+
+        Returns:
+            The value associated with the key(s) or None for missing nested keys.
         """
-        if isinstance(keys, (list, tuple)):
-            if isinstance(keys, tuple) and keys in self:
-                return super().__getitem__(keys)
-            obj = self
-            for key in keys:
-                if isinstance(obj, Mapping):
-                    if key in obj:
-                        obj = obj[key]
-                    else:
-                        md = MagiDict()
-                        object.__setattr__(md, "_from_missing", True)
-                        return md
-                elif isinstance(obj, Sequence) and not isinstance(obj, (str, bytes)):
-                    try:
-                        obj = obj[int(key)]
-                    except (ValueError, IndexError, TypeError):
-                        md = MagiDict()
-                        object.__setattr__(md, "_from_missing", True)
-                        return md
-                else:
-                    md = MagiDict()
-                    object.__setattr__(md, "_from_missing", True)
-                    return md
-            if obj is None:
-                md = MagiDict()
-                object.__setattr__(md, "_from_none", True)
-                return md
-            return obj
         try:
             return super().__getitem__(keys)
         except KeyError:
             if isinstance(keys, str) and "." in keys:
-                keys = keys.split(".")
-                obj = self
+                if '"' in keys or "'" in keys:
+                    if keys.count("'") % 2 == 0 or keys.count('"') % 2 == 0:
+                        if _has_c_hook:
+                            keys = _c_split_dotted(keys)
+                        else:
+                            keys = self._split_dotted(keys)
+                        obj = self
+                    else:
+                        keys = keys.split(".")
+                        obj = self
+                else:
+                    keys = keys.split(".")
+                    obj = self
                 for key in keys:
+                    if (
+                        len(key) > 1
+                        and (key[0] == "'" or key[0] == '"')
+                        and key[-1] == key[0]
+                    ):  # Quoted string check
+                        key = key[1:-1]
+                    elif (
+                        key.isdigit() or key.removeprefix("-").isdigit()
+                    ):  # Integer checks
+                        key = int(key)
+                    elif key == "True":
+                        key = True
+                    elif key == "False":
+                        key = False
+                    elif key == "None":
+                        key = None
+                    elif len(key) > 1 and (
+                        (key[0] == "(" and key[-1] == ")")
+                    ):  # Data structure checks
+                        try:
+                            key = literal_eval(key)
+                        except Exception:
+                            pass
+                    elif (
+                        len(key) > 1
+                        and ("," in key or "." in key)
+                        and all(c.isdigit() or c in "-,." for c in key)
+                        and sum(ch in ",." for ch in key) == 1
+                        and sum(ch == "-" for ch in key) <= 1
+                        and key[1:] != "-"
+                        and key[-1] not in ",."
+                    ):  # Float checks
+                        try:
+                            key = float(key.replace(",", "."))
+                        except (ValueError, TypeError):
+                            pass
                     if isinstance(obj, Mapping):
-                        obj = obj[key]
+                        try:
+                            obj = obj[key]
+                        except KeyError:
+                            return None
                     elif isinstance(obj, Sequence) and not isinstance(
                         obj, (str, bytes)
                     ):
-                        obj = obj[int(key)]
+                        if key is not True and key is not False:
+                            try:
+                                obj = obj[key]
+                            except (IndexError, ValueError, TypeError):
+                                return None
+                        else:
+                            return None
                     else:
-                        raise
+                        return None
                 return obj
             raise
 
+    def _split_dotted(self, keys: str) -> List[Any]:
+        """Splits a dotted string into parts, respecting quoted segments."""
+        parts = []
+        current = []
+        quote = None
+        for ch in keys:
+            if ch in ("'", '"'):
+                if quote is None:
+                    quote = ch
+                elif quote == ch:
+                    quote = None
+            if ch == "." and quote is None:
+                parts.append("".join(current))
+                current = []
+            else:
+                current.append(ch)
+        parts.append("".join(current))
+        return parts
+
     def __getattr__(self, name: str) -> Any:
-        """Enables attribute-style access. Returns a safe, empty MagiDict
-        for missing keys or keys with a value of None."""
-        # Check for special flag attributes first
+        """
+        Provides attribute-style access to dictionary keys.
+
+        Parameters:
+            name: The attribute name corresponding to the dictionary key.
+
+        Returns:
+            The value associated with the key, or a safe, empty MagiDict for missing
+            keys or keys with a value of None.
+        """
         if name in ("_from_none", "_from_missing"):
             try:
                 return object.__getattribute__(self, name)
@@ -199,12 +266,10 @@ class MagiDict(dict):
         """Support deep copy of MagiDict, handling circular references."""
         copied = MagiDict()
         memo[id(self)] = copied
-        # Preserve special flags using object.__setattr__ to bypass __setattr__
         if object.__getattribute__(self, "__dict__").get("_from_none", False):
             object.__setattr__(copied, "_from_none", True)
         if object.__getattribute__(self, "__dict__").get("_from_missing", False):
             object.__setattr__(copied, "_from_missing", True)
-        # Deep copy the contents, bypassing protection if needed
         for k, v in self.items():
             dict.__setitem__(copied, k, deepcopy(v, memo))
         return copied
@@ -237,7 +302,6 @@ class MagiDict(dict):
             object.__setattr__(self, "_from_none", True)
         if state.get("_from_missing", False):
             object.__setattr__(self, "_from_missing", True)
-        # Use dict.update to bypass protection check during unpickling
         for k, v in state.get("data", {}).items():
             dict.__setitem__(self, k, self._hook(v))
 
@@ -250,7 +314,6 @@ class MagiDict(dict):
     def copy(self):
         """Return a shallow copy of the MagiDict, preserving special flags."""
         new_copy = MagiDict(super().copy())
-        # Preserve the special flags
         if getattr(self, "_from_none", False):
             object.__setattr__(new_copy, "_from_none", True)
         if getattr(self, "_from_missing", False):
@@ -354,6 +417,9 @@ class MagiDict(dict):
         """
         Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully.
+
+        Returns:
+            A standard dict representing the MagiDict and its nested structures.
         """
         memo: dict[int, Any] = {}
 
