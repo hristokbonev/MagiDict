@@ -19,7 +19,7 @@ __all__ = [
     "none",
 ]
 
-__version__ = "0.1.7"
+__version__ = "0.2.0"
 
 __implementation__ = "Python + C hook" if _c_extension_loaded else "Pure Python"
 
