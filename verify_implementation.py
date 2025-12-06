@@ -110,9 +110,6 @@ def test_methods():
     tests = {
         "mget": lambda: md.mget("a"),
         "mg": lambda: md.mg("missing", "default"),
-        "strict_get": lambda: md.strict_get("a"),
-        "sget": lambda: md.sget("b"),
-        "sg": lambda: md.sg("c"),
         "disenchant": lambda: md.disenchant(),
         "copy": lambda: md.copy(),
         "search_key": lambda: md.search_key("d"),

@@ -102,28 +102,6 @@ class MagiDict(Dict[_KT, _VT]):
     def mg(self, key: _KT) -> Union[_VT, Self]: ...
     @overload
     def mg(self, key: _KT, default: _T) -> Union[_VT, _T]: ...
-    def strict_get(self, key: _KT) -> _VT:
-        """Strict get method that mimics standard dict access.
-
-        Parameters:
-            key: The key to retrieve.
-
-        Returns:
-            The value associated with the key.
-
-        Raises:
-            KeyError: If the key is not found.
-        """
-        ...
-
-    def sget(self, key: _KT) -> _VT:
-        """Shorthand for strict_get() method."""
-        ...
-
-    def sg(self, key: _KT) -> _VT:
-        """Shorthand for strict_get() method."""
-        ...
-
     def disenchant(self) -> Dict[Any, Any]:
         """Convert MagiDict and all nested MagiDicts back into standard dicts,
         handling circular references gracefully."""
