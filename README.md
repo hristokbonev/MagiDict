@@ -12,11 +12,11 @@
 
 <h1 align="center">MagiDict</h1>
 
-Do you find yourself chaining `.get()`'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss a single `{}`?<br>
-Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except `KeyError` as e"?<br>
-Do your kids get annoyed with you because you've called them "`None`" one too many times.<br>
-And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "`real_friends`"?<br>
-When you're out in public, do you constantly have the feeling that Keanu Reeves is judging you from behind the corner for your inability to elegantly access nested dictionary keys?<br>
+Do you find yourself chaining `.get()`'s like there's no tomorrow, then praying to the Gods of Safety that you didn't miss to add `{}` inside `.get('key', {})`?<br> <br>
+Has your partner left you because whenever they ask you to do something, you always reply, "I'll try, except `KeyError` as e"?<br><br>
+Do your kids get annoyed with you because you've called them "`None`" one too many times.<br><br>
+And did your friends stop hanging out with you because every time you're together, you keep going to the bathroom to check your production logs for any TypeErrors named "`real_friends`"?<br><br>
+When you're out in public, do you constantly have the feeling that Keanu Reeves is judging you from behind the corner for your inability to elegantly access nested dictionary keys?<br><br>
 And when you go to sleep at night, do you lie awake thinking about how much better your life would be if you took that course in JavaScript that your friend gave you a voucher for, before they moved to a different country and you lost contact with them, so you could finally use optional chaining and nullish coalescing operators to safely access nested properties without all the drama?
 
 If you answered "yes" to any of these questions - don't worry! There's finally a solution that doesn't involve learning a whole new programming language or changing your religion to JavaScript! It's called ✨MagiDict✨ and it's here to make your dicts work like magic!
@@ -228,7 +228,6 @@ print(none(md.age))       # 25
 ### Core Methods
 
 - **`mget(key, default=...)`** / **`mg(key, default=...)`** - Safe get that returns empty `MagiDict` for missing keys or `None` values (unless custom default provided)
-- **`strict_get(key)`** / **`sg(key)`** / **`sget(key)`** - Strict get that raises `KeyError` for missing keys, returns `None` for `None` values
 - **`disenchant()`** - Converts `MagiDict` and all nested instances back to standard `dict`. Handles circular references
 - **`filter(function, drop_empty=False)`** - Returns new `MagiDict` with items where function returns `True`
 - **`search_key(key)`** - Finds first occurrence of key in nested structures
@@ -324,7 +323,7 @@ MagiDict provides additional features:
 - Safe chaining with missing keys (returns empty `MagiDict`)
 - Safe chaining with None values
 - Dot notation in bracket access
-- Built-in `mget()` and `strict_get()` methods
+- Built-in `mget()`
 - Search and filter methods
 - Protected empty instances
 - Circular reference handling
